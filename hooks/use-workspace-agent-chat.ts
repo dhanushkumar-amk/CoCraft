@@ -60,7 +60,19 @@ export function useWorkspaceAgentChat(workspaceId: string, editors: Editors) {
   const chat = useChat({
     transport,
     sendAutomaticallyWhen: lastAssistantMessageIsCompleteWithToolCalls,
-    onFinish: refreshPromptUsage,
+    onFinish: () => {
+      refreshPromptUsage();
+      const canvas = editorsRef.current.canvasEditor;
+      if (canvas && canvas.getCurrentPageShapeIds().size > 0) {
+        setTimeout(() => {
+          try {
+            canvas.zoomToFit({ animation: { duration: 450 } });
+          } catch {
+            // ignore if unmounted
+          }
+        }, 150);
+      }
+    },
     onError: (error) => {
       if (!error.message.includes(PROMPT_LIMIT_ERROR)) return;
       refreshPromptUsage();
