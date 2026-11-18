@@ -16,8 +16,11 @@ export function SiteHeader() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-20 flex h-18 items-center justify-between border-b border-white/6 bg-background/70 px-6 backdrop-blur-md md:px-10">
-      <Link href={isSignedIn && !isLandingPage ? "/dashboard" : "/"} className="flex items-center">
-        <Image src="/brand/logo-navbar-dark.png" alt="Outpost" width={314} height={160} className="h-9 w-auto" priority />
+      <Link href={isSignedIn && !isLandingPage ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
+        <Image src="/brand/mascot-dark.png" alt="CoCraft" width={36} height={36} className="size-8 transition-transform group-hover:scale-105" priority />
+        <span className="font-heading text-2xl font-bold tracking-tight text-foreground">
+          Co<span className="text-primary">Craft</span>
+        </span>
       </Link>
       {isLandingPage && (
         <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">

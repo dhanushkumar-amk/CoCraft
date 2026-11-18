@@ -9,14 +9,14 @@ import { AUDIENCES, STEPS, SURFACES } from "./_data/landing";
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col">
-      {/* Hero, over the topographic contours that give Outpost its look */}
+      {/* Hero, over the topographic contours that give CoCraft its look */}
       <section className="topo-bg px-6 pt-10 pb-24 md:px-10 md:pt-16">
         <MapAnnotations />
         <div className="mx-auto flex max-w-5xl flex-col items-center text-center">
           <SectionLabel>Early access</SectionLabel>
 
           <h1 className="mt-2 max-w-3xl text-4xl font-semibold tracking-tight md:text-6xl">
-            An <span className="text-primary">outpost</span> for whatever
+            An AI agent to <span className="text-primary">CoCraft</span> whatever
             you&apos;re building
           </h1>
 
@@ -48,7 +48,7 @@ export default function Home() {
               loop
               playsInline
               poster="/videos/hero-poster.jpg"
-              aria-label="Outpost walkthrough: the agent draws an architecture diagram and writes the spec"
+              aria-label="CoCraft walkthrough: the agent draws an architecture diagram and writes the spec"
               className="size-full object-cover"
             >
               <source src="/videos/hero.webm" type="video/webm" />
@@ -85,7 +85,7 @@ export default function Home() {
               One agent, one workspace, your whole team
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Outpost isn&apos;t another AI diagram generator. The same agent
+              CoCraft isn&apos;t another AI diagram generator. The same agent
               reasons across your canvas and your docs, turning a rough sketch
               into a written spec without you copying anything by hand. And your
               team is right there with you.
@@ -169,8 +169,39 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="border-t border-white/10 px-6 py-8 text-center text-sm text-muted-foreground md:px-10">
-        Made with ❤️ by RoadsideCoder
+      <footer className="border-t border-white/10 px-6 py-12 md:px-10">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Image src="/brand/mascot-dark.png" alt="CoCraft" width={24} height={24} className="size-6" />
+              <span className="font-heading text-lg font-bold">
+                Co<span className="text-primary">Craft</span>
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              An agentic workspace built by <span className="text-foreground font-medium">Dhanush Kumar</span>.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <Link href="/privacy" className="transition-colors hover:text-foreground">
+              Privacy Policy
+            </Link>
+            <Link href="/terms" className="transition-colors hover:text-foreground">
+              Terms & Conditions
+            </Link>
+            <Link href="/refund" className="transition-colors hover:text-foreground">
+              Refund Policy
+            </Link>
+            <Link href="/contact" className="transition-colors hover:text-foreground">
+              Contact Us
+            </Link>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-8 max-w-5xl border-t border-white/5 pt-6 text-center text-xs text-muted-foreground/70">
+          © {new Date().getFullYear()} CoCraft. All rights reserved. Developed by Dhanush Kumar.
+        </div>
       </footer>
     </div>
   );

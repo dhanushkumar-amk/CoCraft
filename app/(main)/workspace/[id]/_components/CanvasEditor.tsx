@@ -115,7 +115,7 @@ export function CanvasEditor({
   }, [userId, userName]);
 
   // The Postgres autosave below also re-seeds a room that starts empty.
-  const store = useCanvasSync({ roomId: `outpost-${workspaceId}`, users });
+  const store = useCanvasSync({ roomId: `cocraft-${workspaceId}`, users });
 
   const handleMount = (editor: Editor) => {
     setCanvasEditor(editor);

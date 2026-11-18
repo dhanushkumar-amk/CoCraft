@@ -1,189 +1,153 @@
-<div align="center">
+# CoCraft
 
-<img width="1280" height="720" alt="outpost (1)" src="https://github.com/user-attachments/assets/f7036758-0862-4941-828c-aedace29bbbc" />
+**An AI-powered agentic workspace: collaborate with an intelligent AI agent that draws live diagrams on an infinite canvas and writes rich documents, while you and your team work alongside it in real time.**
 
-# Outpost
+Created and developed by **Dhanush Kumar**.
 
-**An agentic workspace: chat with an AI agent that draws on a canvas and writes docs, while your team works alongside it in real time.**
+---
 
-Built step by step in a YouTube tutorial on the **roadsidecoder** channel.<br />
-## ▶ **Watch the tutorial:** https://youtu.be/vNXrFMSAsOA
+## 🌟 Key Features
 
-</div>
+- **Dual-Surface Agent**: Chat with an AI agent that works across both a visual canvas (infinite whiteboard) and a collaborative document editor. Ask for *"a database schema and documentation"* and it generates the ERD table shapes on the canvas and writes the specification in the doc simultaneously.
+- **Interactive Whiteboard (tldraw)**: Custom ERD table shapes with editable columns, primary/foreign key badges, and connector lines that snap to individual rows.
+- **Collaborative Docs (BlockNote & Yjs)**: Live multi-user cursors and rich-text blocks synced with Supabase Realtime.
+- **Real-Time Collaboration**: Real-time canvas collaboration with multi-user cursors via tldraw sync.
+- **Teams & Organizations**: Multi-tenancy powered by Clerk Organizations (personal workspaces + team shared workspaces).
+- **Interactive Dashboard & Kanban**: Track workspaces from planning to completion with drag-and-drop status boards.
+- **Read-Only Sharing & PDF Export**: Instant shareable read-only links and high-fidelity PDF exports.
+- **Global Billing & Subscriptions**: Flexible billing options supporting international and Indian payments (Dodo Payments / Clerk Billing).
 
-## What you'll build
+---
 
-- **An AI agent that works on two surfaces.** Ask for "a database schema, documented" and it draws the ERD on the canvas and writes the spec in the doc. Name a surface ("just the doc") and it sticks to it.
-- **A tldraw canvas** with a custom ERD table shape: editable columns, primary and foreign key badges, and arrows that snap to rows.
-- **A block-based doc** (BlockNote) with real-time collaboration: live cursors and edits merged with Yjs over Supabase Realtime.
-- **Real-time canvas collaboration** with live cursors, via tldraw sync.
-- **Teams with Clerk Organizations:** everyone in an org can open any of its workspaces.
-- **A dashboard** where you describe what you want to plan (typed or by voice) and land in a new workspace with the agent already working.
-- **A kanban board** of workspaces with drag and drop.
-- **Sharing:** public read-only links, plus PDF export of the doc and canvas.
-- **Subscriptions with Clerk Billing:** per-seat team plans, usage tracking and plan limits.
+## 🛠️ Tech Stack
 
-## Tech stack
+| Area | Technologies |
+|---|---|
+| **Framework** | Next.js (App Router, Server Actions, Turbopack) |
+| **Language** | TypeScript |
+| **Authentication & Orgs** | Clerk (Organizations & User Management) |
+| **Database & Realtime** | Supabase (PostgreSQL & Realtime Broadcast Channels) |
+| **ORM** | Prisma ORM |
+| **AI Engine** | Vercel AI SDK with Google Gemini 2.5/Flash |
+| **Canvas** | tldraw with Custom Shape Extensions |
+| **Document Editor** | BlockNote, ProseMirror, Yjs |
+| **UI & Styling** | Tailwind CSS v4, Radix UI, Lucide Icons, Sonner |
+| **Payments & MoR** | Dodo Payments / Clerk Billing |
 
-| Area                   | Choice                                                                         |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| Framework              | [Next.js](https://nextjs.org) (App Router, Server Actions)                     |
-| Auth, orgs and billing | [Clerk](https://clerk.com) (Organizations and Clerk Billing)                   |
-| Database and realtime  | [Supabase](https://supabase.com) (Postgres and Realtime)                       |
-| ORM                    | [Prisma](https://www.prisma.io)                                                |
-| AI                     | [Vercel AI SDK](https://ai-sdk.dev) with Google Gemini                         |
-| Canvas                 | [tldraw](https://tldraw.dev) and tldraw sync                                   |
-| Docs                   | [BlockNote](https://www.blocknotejs.org) and [Yjs](https://yjs.dev)            |
-| UI                     | [Tailwind CSS](https://tailwindcss.com) and [shadcn/ui](https://ui.shadcn.com) |
+---
 
-## Getting started
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Node.js 22 or later
-- Free accounts on [Clerk](https://clerk.com), [Supabase](https://supabase.com) and [Google AI Studio](https://aistudio.google.com)
+- npm or pnpm
+- Accounts on:
+  - [Clerk](https://clerk.com) (Authentication)
+  - [Supabase](https://supabase.com) (PostgreSQL Database & Realtime)
+  - [Google AI Studio](https://aistudio.google.com/apikey) (Gemini API Key)
+  - [Dodo Payments](https://dodopayments.com) (Global & Indian Payments)
 
-### 1. Install
+---
 
-```bash
-git clone <this-repo-url> outpost
-cd outpost
-npm install
-```
+### Installation
 
-`npm install` also generates the Prisma client.
+1. **Clone the repository:**
+   ```bash
+   git clone <your-repo-url> cocraft
+   cd cocraft
+   ```
 
-### 2. Environment variables
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-```bash
-cp .env.example .env
-```
+3. **Configure Environment Variables:**
+   Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
 
-Fill in `.env`. Each variable has a comment saying where to find it.
+   Fill in your `.env` values:
+   ```env
+   # Clerk Auth
+   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+   CLERK_SECRET_KEY=sk_test_...
+   NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+   NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+   NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/dashboard
+   NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/dashboard
 
-| Variable                                                           | Where it comes from                                                                           |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`            | Clerk dashboard → API keys                                                                    |
-| `DATABASE_URL`                                                     | Supabase → Connect: the **pooled** connection string (port 6543), with `?pgbouncer=true`      |
-| `DIRECT_URL`                                                       | Supabase → Connect: the **direct/session** connection string (port 5432), used for migrations |
-| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Project Settings → API                                                             |
-| `GOOGLE_GENERATIVE_AI_API_KEY`                                     | Google AI Studio → API keys                                                                   |
-| `NEXT_PUBLIC_TLDRAW_LICENSE_KEY`                                   | Optional in development (see [Deploying](#deploying))                                         |
+   # Supabase Database (PostgreSQL)
+   DATABASE_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
+   DIRECT_URL="postgresql://postgres.[REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres"
 
-### 3. Database
+   # Supabase Realtime
+   NEXT_PUBLIC_SUPABASE_URL=https://[REF].supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
 
-Create the tables in your Supabase database:
+   # Google Gemini AI
+   GOOGLE_GENERATIVE_AI_API_KEY=...
 
-```bash
-npx prisma migrate deploy
-```
+   # Dodo Payments (Global & India)
+   DODO_PAYMENTS_API_KEY=test_...
+   DODO_PAYMENTS_WEBHOOK_KEY=whsec_...
+   DODO_PAYMENTS_ENVIRONMENT=test_mode
+   ```
 
-### 4. Clerk setup
+4. **Deploy Database Schema:**
+   ```bash
+   npx prisma migrate deploy
+   ```
 
-In the [Clerk dashboard](https://dashboard.clerk.com):
+5. **Start the Development Server:**
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-1. **Organizations:** enable them, with **Membership optional**, so people can also work in a personal account.
-2. **Billing:** enable billing for **users** and **organizations**, and choose the **Clerk development gateway** (test payments, no Stripe account needed).
-3. **Features** (Billing → Subscription plans → Features). The code checks these keys, so use them exactly:
+---
 
-   | Key                    | Purpose                                |
-   | ---------------------- | -------------------------------------- |
-   | `unlimited_workspaces` | Removes the 3-workspace limit          |
-   | `public_sharing`       | Public read-only links                 |
-   | `pdf_export`           | PDF export                             |
-   | `agent_prompts_500`    | 500 agent prompts per seat per month   |
-   | `agent_prompts_2000`   | 2,000 agent prompts per seat per month |
-
-   You can add display-only features too (like "Voice input"). The code ignores keys it doesn't know. Never attach the five keys above to a Free plan.
-
-4. **Plans** (monthly):
-
-   | Plan       | Type                     | Key          | Price                  | Features                                   |
-   | ---------- | ------------------------ | ------------ | ---------------------- | ------------------------------------------ |
-   | Free       | user and org (default)   |              | $0                     | none of the five above                     |
-   | Pro        | user                     | `pro`        | $12 / month            | the first four                             |
-   | Team       | organization, seat-based | `team`       | $12 per member / month | the first four                             |
-   | Enterprise | organization, seat-based | `enterprise` | $25 per member / month | the first three, plus `agent_prompts_2000` |
-
-Free plans are limited to 20 agent prompts a month and 3 workspaces. These numbers live in `lib/plan-limits.ts`.
-
-### 5. Supabase Realtime
-
-Doc collaboration uses **public** Realtime broadcast channels. In your Supabase project's Realtime settings, make sure public (non-private) channels are allowed.
-
-### 6. Run
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000). To try collaboration, sign in with two different accounts in two browser windows (for example a normal and a private window).
-
-## Project structure
+## 📁 Project Structure
 
 ```
 app/
-  page.tsx                  Landing page
-  (main)/dashboard/         Prompt box and recent workspaces
-  (main)/workspaces/        Kanban board of all workspaces
-  (main)/workspace/[id]/    The workspace: doc, canvas and agent
-  shared/[token]/           Public read-only view
-  api/agent/                The agent: Gemini, tools and prompt limits
-actions/                    Server Actions (workspaces, docs, canvas, usage)
-components/                 Shared UI (a page's own components live in its _components/ folder)
-  EntityTable/              The custom ERD table shape for tldraw
-hooks/                      Agent chat, collaborative doc and more
-lib/
-  agent-tools.ts            Every agent tool's description and schema
-  agent-canvas.ts           Canvas tools, run in the browser
-  agent-doc.ts              Doc tools, run in the browser
-  billing.ts                Plan lookup from Clerk and prompt usage
-  plan-limits.ts            Free limits and upgrade messages
-  supabase-yjs-provider.ts  Syncs the doc over Supabase Realtime
-prisma/                     Database schema and migrations
-tldraw-sync/                The canvas sync server (a Cloudflare Worker)
+  page.tsx                  # Landing page
+  (main)/dashboard/         # User dashboard and quick actions
+  (main)/workspaces/        # Kanban board of all workspaces
+  (main)/workspace/[id]/    # Workspace: canvas, collaborative doc, and AI chat
+  shared/[token]/           # Public read-only workspace view
+  privacy/                  # Privacy policy page
+  terms/                    # Terms and conditions page
+  refund/                   # Refund and cancellation policy page
+  contact/                  # Contact us page
+  api/agent/                # AI Agent backend endpoint (Gemini + tools)
+actions/                    # Next.js Server Actions (workspaces, docs, canvas)
+components/                 # Shared UI components & custom tldraw shapes
+lib/                        # Utility functions, Prisma client, AI tools
+prisma/                     # Database schema and migration history
 ```
 
-**How the agent works:** the agent's tools have no server-side implementation. Gemini decides which tool to call, and the browser runs it against the live canvas and doc editors, so collaborators see changes appear in real time. Every request sends a compact summary of both surfaces, so the agent can edit what's already there.
+---
 
-## Scaling up
+## ⚖️ Legal & Compliance
 
-Outpost runs on free tiers out of the box. As you grow, here's how to scale each piece:
+- **Privacy Policy**: [CoCraft Privacy Policy](/privacy)
+- **Terms & Conditions**: [CoCraft Terms](/terms)
+- **Refund Policy**: [CoCraft Refund Policy](/refund)
+- **Contact Us**: [CoCraft Contact](/contact)
 
-| Today                                                                                                                                                                                 | To scale up                                                                                                                                                             |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Doc collaboration uses **public** Supabase Realtime channels.                                                                                                                         | Use private channels with Supabase Realtime Authorization, and connect Clerk to Supabase so clients join with their Clerk session.                                      |
-| **PDF export** runs in the browser, so it's fast and costs no server time.                                                                                                            | Move export to the server if you want it enforced server-side too.                                                                                                      |
-| Billing uses Clerk's **development gateway**.                                                                                                                                         | Connect your own Stripe account in Clerk before taking real payments.                                                                                                   |
-| Clerk Billing is in public beta, and its components are **experimental**.                                                                                                             | `@clerk/nextjs` and `@clerk/ui` are pinned to exact versions. Keep them pinned, and test before upgrading.                                                              |
+---
 
-## Deploying
+## 📬 Contact & Support
 
-1. Deploy the canvas sync server (free, no domain needed) and set `NEXT_PUBLIC_TLDRAW_SYNC_URL` to the URL it prints:
+Developed by **Dhanush Kumar**.
+- **Email**: [dhanushkumaramk@gmail.com](mailto:dhanushkumaramk@gmail.com)
+- **Project**: CoCraft Agentic Workspace
 
-   ```bash
-   cd tldraw-sync
-   npm install
-   npx wrangler login
-   npm run deploy
-   ```
+---
 
-2. Deploy to [Vercel](https://vercel.com) and add the same environment variables.
-3. Get a free **hobby license** from [tldraw.dev](https://tldraw.dev/pricing) and set `NEXT_PUBLIC_TLDRAW_LICENSE_KEY`. Without a key, tldraw shows a "Get a license for production" watermark.
-4. For real payments, connect Stripe in Clerk Billing.
+## 📄 License
 
-## Scripts
-
-| Command         | What it does               |
-| --------------- | -------------------------- |
-| `npm run dev`   | Start the dev server       |
-| `npm run build` | Production build           |
-| `npm run start` | Serve the production build |
-| `npm run lint`  | Lint with ESLint           |
-| `npm run seed -- you@email.com [org_id]` | Add demo workspaces (sign in once first) |
-
-After changing `prisma/schema.prisma`, create and apply a migration, run `npx prisma generate`, and restart the dev server.
-
-## License
-
-[GPL-3.0](LICENSE). The PDF export uses BlockNote's [`@blocknote/xl-pdf-exporter`](https://www.blocknotejs.org/docs/features/export/pdf), which is GPL-3.0 licensed, so the whole project is too. You can use, change and share this code, including commercially, as long as your version stays open source under GPL-3.0. To use it in a closed-source product, remove the PDF exporter or get a [BlockNote commercial license](https://www.blocknotejs.org/pricing).
+This project is licensed under the [GPL-3.0 License](LICENSE).

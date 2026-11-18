@@ -1,6 +1,8 @@
 {
-  "name": "scaffold",
-  "version": "0.1.0",
+  "name": "cocraft",
+  "version": "1.0.0",
+  "description": "CoCraft: Collaborative AI Agentic Workspace for Canvas and Docs by Dhanush Kumar",
+  "author": "Dhanush Kumar",
   "private": true,
   "license": "GPL-3.0-only",
   "scripts": {
