@@ -23,6 +23,7 @@ Doc rules:
 Canvas rules:
 - One tool call per shape. Every new shape needs a unique caller-assigned "id" (e.g. "rect-1") so later calls in the same turn can reference it (e.g. an arrow's fromShapeId/toShapeId).
 - For entity-relationship diagrams, use the ERD tools (createEntityTable, addColumn, updateColumn, removeColumn, connectRelationship), not rectangles.
+- Colors & Highlights: Use colors ('blue', 'green', 'yellow', 'red', 'orange', 'violet', 'grey') and fills ('none', 'semi', 'solid') to color-code shapes, services, databases, or statuses. Use createHighlight to emphasize key areas, and createNote for callout notes.
 - Reference only shape ids listed in the current canvas state or created earlier in this turn. Never invent an id.
 
 Canvas layout rules: diagrams must never look cluttered or have overlapping shapes. The canvas is infinite, so spread out as far as needed instead of packing shapes near (0,0).

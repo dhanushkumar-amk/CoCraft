@@ -7,15 +7,70 @@ import { z } from "zod";
 
 const point = z.object({ x: z.number(), y: z.number() });
 const shapeId = (example: string) => z.string().describe(`Caller-assigned unique id, e.g. '${example}'`);
+const shapeColor = z
+  .enum([
+    "black",
+    "grey",
+    "light-violet",
+    "violet",
+    "blue",
+    "light-blue",
+    "yellow",
+    "orange",
+    "green",
+    "light-green",
+    "light-red",
+    "red",
+  ])
+  .optional()
+  .describe("Color of the shape outline or fill (e.g. 'blue', 'green', 'yellow', 'red', 'orange', 'violet')");
+const shapeFill = z
+  .enum(["none", "semi", "solid", "pattern"])
+  .optional()
+  .describe("Fill style: 'none' (outline only), 'semi' (translucent tint), 'solid' (filled background), 'pattern'");
+
 const boxShape = (example: string) =>
-  z.object({ id: shapeId(example), position: point, width: z.number(), height: z.number(), label: z.string().optional() });
+  z.object({
+    id: shapeId(example),
+    position: point,
+    width: z.number(),
+    height: z.number(),
+    label: z.string().optional(),
+    color: shapeColor,
+    fill: shapeFill,
+  });
 
 export const canvasToolDefs = {
-  createRectangle: { description: "Create a rectangle on the canvas.", inputSchema: boxShape("rect-1") },
-  createEllipse: { description: "Create an ellipse on the canvas.", inputSchema: boxShape("ellipse-1") },
+  createRectangle: { description: "Create a rectangle on the canvas with optional color and fill.", inputSchema: boxShape("rect-1") },
+  createEllipse: { description: "Create an ellipse on the canvas with optional color and fill.", inputSchema: boxShape("ellipse-1") },
+  createNote: {
+    description: "Create a colored sticky note / callout box on the canvas.",
+    inputSchema: z.object({
+      id: shapeId("note-1"),
+      position: point,
+      text: z.string(),
+      color: shapeColor,
+    }),
+  },
+  createHighlight: {
+    description: "Highlight a region or shape with a translucent highlighter marker box.",
+    inputSchema: z.object({
+      id: shapeId("highlight-1"),
+      position: point,
+      width: z.number(),
+      height: z.number(),
+      color: shapeColor,
+    }),
+  },
   createText: {
-    description: "Create a text label on the canvas.",
-    inputSchema: z.object({ id: shapeId("text-1"), position: point, text: z.string(), fontSize: z.number().optional() }),
+    description: "Create a text label on the canvas with optional color and font size.",
+    inputSchema: z.object({
+      id: shapeId("text-1"),
+      position: point,
+      text: z.string(),
+      fontSize: z.number().optional(),
+      color: shapeColor,
+    }),
   },
   createArrow: {
     description: "Create an arrow connecting two existing shapes by their ids.",
@@ -24,16 +79,19 @@ export const canvasToolDefs = {
       fromShapeId: z.string().describe("id of the shape this arrow starts at"),
       toShapeId: z.string().describe("id of the shape this arrow ends at"),
       label: z.string().optional(),
+      color: shapeColor,
     }),
   },
   updateShape: {
-    description: "Update an existing shape's position, size, or label.",
+    description: "Update an existing shape's position, size, label, color, or fill.",
     inputSchema: z.object({
       id: z.string().describe("id of the shape to update"),
       position: point.optional(),
       width: z.number().optional(),
       height: z.number().optional(),
       label: z.string().optional(),
+      color: shapeColor,
+      fill: shapeFill,
     }),
   },
   deleteShape: {

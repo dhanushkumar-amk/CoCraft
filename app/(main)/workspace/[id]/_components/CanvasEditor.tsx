@@ -12,6 +12,7 @@ import {
   UserRecordType,
   DefaultToolbar,
   DefaultToolbarContent,
+  HighlightToolbarItem,
   inlineBase64AssetStore,
   defaultShapeUtils,
   defaultBindingUtils,
@@ -55,15 +56,15 @@ const useCanvasSync = SYNC_URL
       })
   : ({ roomId, users }: SyncOptions) => useSyncDemo({ roomId, shapeUtils, users });
 
-// A cleaner, single-page canvas: no style panel, page menu or main menu, and a vertical toolbar
-// on the left with our Add table button.
+// Full canvas experience: with StylePanel (colors, fills, strokes, fonts), vertical toolbar,
+// highlighter tool, and our custom Add table button.
 const components: TLComponents = {
-  StylePanel: null,
   PageMenu: null,
   MainMenu: null,
   Toolbar: () => (
     <DefaultToolbar orientation="vertical">
       <AddEntityTableButton />
+      <HighlightToolbarItem />
       <DefaultToolbarContent />
     </DefaultToolbar>
   ),

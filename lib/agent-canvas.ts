@@ -6,6 +6,8 @@ import {
   type TLShapeId,
   type TLShapePartial,
   type VecModel,
+  type TLDefaultColorStyle,
+  type TLDefaultFillStyle,
 } from "tldraw";
 import { TABLE_WIDTH, getTableHeight, newRow, rowAnchorY, type EntityRow, type EntityTableShape } from "@/components/EntityTable/EntityTableShape";
 import { canvasToolDefs, fail, normalizeModelText, ok, type ToolResult } from "@/lib/agent-tools";
@@ -67,7 +69,8 @@ function createArrowBetween(
   arrowId: TLShapeId,
   from: { id: TLShapeId; anchor?: VecModel },
   to: { id: TLShapeId; anchor?: VecModel },
-  label?: string
+  label?: string,
+  color?: TLDefaultColorStyle
 ) {
   const fromBounds = editor.getShapePageBounds(from.id);
   const toBounds = editor.getShapePageBounds(to.id);
@@ -80,6 +83,7 @@ function createArrowBetween(
       // Plain {x, y}: tldraw records can't hold class instances like the Vec that .center returns.
       start: { x: fromBounds.center.x, y: fromBounds.center.y },
       end: { x: toBounds.center.x, y: toBounds.center.y },
+      ...(color && { color }),
       ...(label && { richText: richText(label) }),
     },
   });
@@ -121,7 +125,43 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
           geo: toolName === "createRectangle" ? "rectangle" : "ellipse",
           w: input.width,
           h: input.height,
+          ...(input.color && { color: input.color }),
+          ...(input.fill && { fill: input.fill }),
           ...(input.label && { richText: richText(input.label) }),
+        },
+      });
+      return ok();
+    }
+
+    case "createNote": {
+      const input = defs.createNote.inputSchema.parse(rawInput);
+      editor.createShape({
+        id: resolveNewId(idMap, input.id),
+        type: "note",
+        x: input.position.x,
+        y: input.position.y,
+        props: {
+          richText: richText(input.text),
+          ...(input.color && { color: input.color }),
+        },
+      });
+      return ok();
+    }
+
+    case "createHighlight": {
+      const input = defs.createHighlight.inputSchema.parse(rawInput);
+      editor.createShape({
+        id: resolveNewId(idMap, input.id),
+        type: "geo",
+        x: input.position.x,
+        y: input.position.y,
+        props: {
+          geo: "rectangle",
+          w: input.width,
+          h: input.height,
+          color: input.color ?? "yellow",
+          fill: "semi",
+          dash: "solid",
         },
       });
       return ok();
@@ -134,7 +174,11 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         type: "text",
         x: input.position.x,
         y: input.position.y,
-        props: { richText: richText(input.text), ...(input.fontSize && { size: fontSizeToStyle(input.fontSize) }) },
+        props: {
+          richText: richText(input.text),
+          ...(input.color && { color: input.color }),
+          ...(input.fontSize && { size: fontSizeToStyle(input.fontSize) }),
+        },
       });
       return ok();
     }
@@ -144,7 +188,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       const from = lookupShape(editor, idMap, input.fromShapeId);
       const to = lookupShape(editor, idMap, input.toShapeId);
       if (!from || !to) return fail("fromShapeId or toShapeId does not refer to a known shape");
-      return createArrowBetween(editor, resolveNewId(idMap, input.id), { id: from.id }, { id: to.id }, input.label);
+      return createArrowBetween(editor, resolveNewId(idMap, input.id), { id: from.id }, { id: to.id }, input.label, input.color);
     }
 
     case "updateShape": {
@@ -159,6 +203,8 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         props: {
           ...(input.width && { w: input.width }),
           ...(input.height && { h: input.height }),
+          ...(input.color && { color: input.color }),
+          ...(input.fill && { fill: input.fill }),
           ...(input.label && "richText" in shape.props && { richText: richText(input.label) }),
         },
       } as TLShapePartial<TLShape>);
