@@ -170,6 +170,7 @@ function PlanAction({
 }) {
   const { isSignedIn, orgId, has } = useAuth();
   const { organization } = useOrganization();
+  const [loading, setLoading] = useState(false);
   const isPaid = !plan.isDefault;
 
   if (!isSignedIn) {
@@ -198,6 +199,34 @@ function PlanAction({
     }
   }
 
+  const handleUpgradeClick = async () => {
+    try {
+      setLoading(true);
+      const planSlug = plan.name.toLowerCase().includes("enterprise")
+        ? "enterprise"
+        : plan.name.toLowerCase().includes("team")
+        ? "team"
+        : "pro";
+
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planSlug, payerType }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        onCheckoutStart?.();
+        window.location.href = data.url;
+        return;
+      }
+    } catch {
+      // If Dodo is not configured, continue with Clerk drawer
+    } finally {
+      setLoading(false);
+    }
+    onCheckoutStart?.();
+  };
+
   return (
     <div className="space-y-2">
       {payerType === "organization" && organization && (
@@ -205,10 +234,16 @@ function PlanAction({
           Upgrading <span className="text-foreground">{organization.name}</span>
         </p>
       )}
-      {/* CheckoutButton runs this button's onClick first, then opens Clerk's checkout drawer. */}
+      {/* CheckoutButton runs this button's onClick first, then opens Clerk's checkout drawer if not redirected. */}
       <CheckoutButton planId={plan.id} planPeriod="month" for={payerType}>
-        <Button size="lg" variant={isFeatured ? "default" : "outline"} className="w-full" onClick={onCheckoutStart}>
-          Upgrade to {plan.name}
+        <Button
+          size="lg"
+          variant={isFeatured ? "default" : "outline"}
+          className="w-full"
+          disabled={loading}
+          onClick={handleUpgradeClick}
+        >
+          {loading ? "Redirecting to checkout..." : `Upgrade to ${plan.name}`}
         </Button>
       </CheckoutButton>
     </div>

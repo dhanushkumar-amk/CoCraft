@@ -7,7 +7,6 @@ import {
   type TLShapePartial,
   type VecModel,
   type TLDefaultColorStyle,
-  type TLDefaultFillStyle,
 } from "tldraw";
 import { TABLE_WIDTH, getTableHeight, newRow, rowAnchorY, type EntityRow, type EntityTableShape } from "@/components/EntityTable/EntityTableShape";
 import { canvasToolDefs, fail, normalizeModelText, ok, type ToolResult } from "@/lib/agent-tools";

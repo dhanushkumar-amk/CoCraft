@@ -21,14 +21,54 @@ export async function getWorkspaceOwnerId(workspaceId: string) {
   return workspaceOwnerId(workspace);
 }
 
-// The owner's plan features, looked up from Clerk on the server. This works for any owner, not
-// just the org selected in the viewer's switcher, and even for signed-out viewers (shared links).
+// The owner's plan features, looked up from Dodo Payments subscription in the database,
+// or falling back to Clerk Billing. This works for any owner (personal user or org).
 export async function getEntitlements(ownerId: string) {
-  const clerk = await clerkClient();
   const isOrg = ownerId.startsWith("org_");
+
+  // 1. Check Dodo Payments subscription stored in Supabase via Prisma
+  try {
+    const dodoSub = await prisma.subscription.findUnique({
+      where: { ownerId },
+    });
+
+    if (dodoSub && (dodoSub.status === "active" || dodoSub.status === "past_due")) {
+      const plan = dodoSub.plan.toLowerCase();
+      let members = 1;
+      try {
+        if (isOrg) {
+          const clerk = await clerkClient();
+          const org = await clerk.organizations.getOrganization({ organizationId: ownerId, includeMembersCount: true });
+          members = org.membersCount ?? 1;
+        }
+      } catch {
+        // fallback members = 1
+      }
+
+      let promptLimit = 500;
+      if (plan === "enterprise") {
+        promptLimit = 2000 * members;
+      } else if (plan === "team") {
+        promptLimit = 500 * members;
+      }
+
+      return {
+        isPaid: true,
+        promptLimit,
+        unlimitedWorkspaces: true,
+        publicSharing: true,
+        pdfExport: true,
+      };
+    }
+  } catch (err) {
+    console.error("Error reading Dodo subscription from DB:", err);
+  }
+
+  // 2. Fall back to Clerk Billing (if used)
   const features = new Set<string>();
 
   try {
+    const clerk = await clerkClient();
     const subscription = isOrg
       ? await clerk.billing.getOrganizationBillingSubscription(ownerId)
       : await clerk.billing.getUserBillingSubscription(ownerId);
@@ -45,6 +85,7 @@ export async function getEntitlements(ownerId: string) {
   const paid = PROMPT_FEATURES.find(({ feature }) => features.has(feature));
   let promptLimit = FREE_MONTHLY_PROMPTS;
   if (paid) {
+    const clerk = await clerkClient();
     const members = isOrg
       ? ((await clerk.organizations.getOrganization({ organizationId: ownerId, includeMembersCount: true }))
           .membersCount ?? 1)
