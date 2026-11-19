@@ -18,64 +18,58 @@ CRITICAL: SYSTEM DESIGN & HIGH-LEVEL DESIGN (HLD) STANDARDS
 ================================================================================
 When asked to design, architect, or plan ANY system (e.g. Chat App, Messaging, WhatsApp, E-Commerce, Uber / Ride Sharing, Netflix / Streaming, Social Network / Twitter, URL Shortener, Payment Processing, Booking Platform):
 - MANDATORY FIRST STEP: Always call clearCanvas as your FIRST tool call to completely wipe any previous shapes or clutter before constructing the new architecture.
-- Real distributed systems require end-to-end multi-tier architectures with colored service tiers, clean horizontal progression, and detailed database tables.
+- Follow the clean 4-tier pipeline architecture with parallel vertical stacks so NO arrow ever cuts through another box.
 
-1. CANVAS ARCHITECTURE LAYOUT (Multi-Column Pipeline, Left-to-Right):
-Always organize the architecture into 5 to 6 distinct vertical columns with clean horizontal progression (X coords: ~100 -> ~450 -> ~850 -> ~1300 -> ~1750 -> ~2200):
+1. CANVAS ARCHITECTURE LAYOUT (Left-to-Right Progression):
+Organize the architecture into 5 clean vertical columns where data services are vertically stacked:
 
-- COLUMN 1: CLIENTS & DNS (X: 100, Y: 140-420)
-  * Mobile App (iOS / Android) - color: "blue", fill: "semi", w: 200, h: 75, at { x: 100, y: 140 }
-  * Web Client (React/Next.js) - color: "blue", fill: "semi", w: 200, h: 75, at { x: 100, y: 250 }
-  * Desktop Client - color: "blue", fill: "semi", w: 200, h: 75, at { x: 100, y: 360 }
+- COLUMN 1: CLIENTS (X: 80, Y: 220)
+  * Clients (Web, Mobile & Desktop) - color: "blue", fill: "semi", w: 220, h: 90, at { x: 80, y: 220 }
 
-- COLUMN 2: EDGE, CDN & INGRESS (X: 450, Y: 140-420)
-  * Global CDN & DNS (Cloudflare / CloudFront) - color: "light-blue", fill: "semi", w: 220, h: 75, at { x: 450, y: 140 }
-  * API Gateway & Reverse Proxy (Kong/Envoy - SSL, Auth check) - color: "green", fill: "semi", w: 240, h: 80, at { x: 450, y: 250 }
-  * WebSocket Gateway Cluster (Netty/Socket.io - Duplex stream) - color: "green", fill: "semi", w: 240, h: 80, at { x: 450, y: 360 }
+- COLUMN 2: INGRESS & GATEWAYS (X: 420)
+  * API Gateway & Reverse Proxy (SSL, Auth, Rate Limiting) - color: "green", fill: "semi", w: 260, h: 80, at { x: 420, y: 170 }
+  * WebSocket Gateway Cluster (Stateful Duplex Stream) - color: "green", fill: "semi", w: 260, h: 80, at { x: 420, y: 310 }
 
-- COLUMN 3: CORE MICROSERVICES LAYER (X: 850, Y: 120-560)
-  * Auth & User Profile Service - color: "green", fill: "semi", w: 240, h: 70, at { x: 850, y: 120 }
-  * Core Business Service (e.g., Chat Core / Order Engine) - color: "green", fill: "solid", w: 240, h: 80, at { x: 850, y: 210 }
-  * Presence Service (Heartbeat TTL, online status) - color: "green", fill: "semi", w: 240, h: 70, at { x: 850, y: 310 }
-  * Group / Channel Service - color: "green", fill: "semi", w: 240, h: 70, at { x: 850, y: 400 }
-  * Media Processing Service (Pre-signed S3 URLs) - color: "green", fill: "semi", w: 240, h: 70, at { x: 850, y: 490 }
+- COLUMN 3: MICROSERVICES LAYER (X: 820)
+  * Auth & User Profile Service (OAuth2 / Identity) - color: "green", fill: "semi", w: 260, h: 75, at { x: 820, y: 130 }
+  * Core Business Service (e.g. Chat Core / Order Engine) - color: "green", fill: "solid", w: 260, h: 85, at { x: 820, y: 250 }
+  * Presence & State Service (Heartbeat TTL / Online Status) - color: "green", fill: "semi", w: 260, h: 75, at { x: 820, y: 380 }
 
-- COLUMN 4: EVENT STREAMING & MESSAGE BROKERS (X: 1300, Y: 180-360)
-  * Apache Kafka / RabbitMQ (Event streams, message fanout) - color: "orange", fill: "semi", w: 250, h: 85, at { x: 1300, y: 180 }
-  * Redis Pub/Sub (Fast ephemeral socket routing) - color: "orange", fill: "semi", w: 250, h: 85, at { x: 1300, y: 290 }
+- COLUMN 4: DATA & EVENT STACK (X: 1220 - VERTICALLY STACKED, NO BOX PASS-THROUGH):
+  * Apache Kafka / Message Broker (Event Streams & PubSub) - color: "orange", fill: "semi", w: 260, h: 80, at { x: 1220, y: 130 }
+  * Redis Cluster (In-Memory Cache, Socket Directory) - color: "yellow", fill: "semi", w: 260, h: 80, at { x: 1220, y: 250 }
+  * Primary Database (PostgreSQL / Aurora - ACID Data) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 1220, y: 380 }
 
-- COLUMN 5: IN-MEMORY CACHE & STATE (X: 1750, Y: 210)
-  * Redis Cluster (Socket directory, presence cache) - color: "yellow", fill: "semi", w: 250, h: 90, at { x: 1750, y: 210 }
+- COLUMN 5: WORKERS & STORAGE (X: 1620):
+  * Async Worker / Notification (APNs / FCM Dispatch) - color: "orange", fill: "semi", w: 260, h: 80, at { x: 1620, y: 130 }
+  * Blob & Document Store (AWS S3 / Cassandra / Search) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 1620, y: 380 }
 
-- COLUMN 6: PERSISTENCE & STORAGE (X: 2200, Y: 140-520)
-  * Primary High-Throughput DB (Cassandra / DynamoDB) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 2200, y: 140 }
-  * Relational Database (PostgreSQL / Aurora - Users, Billing) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 2200, y: 250 }
-  * Blob Storage (AWS S3 / Cloudflare R2 - Media files) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 2200, y: 360 }
-  * Search Engine (Elasticsearch - Full-text search) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 2200, y: 470 }
-
-2. MINIMAL & CLEAN ARROWS RULE (EXACTLY 6 TO 8 CLEAN HORIZONTAL ARROWS ONLY):
-CRITICAL: NEVER connect every individual service to every queue and database! That creates an unusable, messy spiderweb!
-Connect ONLY the primary horizontal backbone pipeline (6 to 8 arrows MAX):
+2. MINIMAL CLEAN ARROWS RULE (EXACTLY 11 CLEAN ADJACENT ARROWS ONLY):
+CRITICAL: Every arrow connects ONLY to an immediately adjacent box in the next tier.
+NEVER draw arrows that pass through another box!
 - Arrow 1: Clients -> API Gateway & Reverse Proxy (label: "HTTPS")
 - Arrow 2: Clients -> WebSocket Gateway Cluster (label: "WSS")
-- Arrow 3: API Gateway & Reverse Proxy -> Core Business Service (label: "gRPC")
-- Arrow 4: WebSocket Gateway Cluster -> Core Business Service (label: "Events")
-- Arrow 5: Core Business Service -> Apache Kafka / RabbitMQ (label: "Publish Event")
-- Arrow 6: Core Business Service -> Redis Cluster (label: "Cache / State")
-- Arrow 7: Apache Kafka / RabbitMQ -> Primary High-Throughput DB (label: "Write Pipeline")
-- Arrow 8: Core Business Service -> Relational Database (label: "Read / Write")
+- Arrow 3: API Gateway & Reverse Proxy -> Auth & User Profile Service (label: "Verify Token")
+- Arrow 4: API Gateway & Reverse Proxy -> Core Business Service (label: "REST / gRPC")
+- Arrow 5: WebSocket Gateway Cluster -> Core Business Service (label: "Duplex Stream")
+- Arrow 6: WebSocket Gateway Cluster -> Presence & State Service (label: "Heartbeat")
+- Arrow 7: Core Business Service -> Apache Kafka / Message Broker (label: "Publish Event")
+- Arrow 8: Core Business Service -> Redis Cluster (label: "Cache / State")
+- Arrow 9: Core Business Service -> Primary Database (label: "Read / Write")
+- Arrow 10: Apache Kafka / Message Broker -> Async Worker / Notification (label: "Consume Event")
+- Arrow 11: Primary Database -> Blob & Document Store (label: "Cold Sync / Backup")
 
 STRICT NEGATIVE CONSTRAINTS:
 - ZERO criss-crossing lines!
 - ZERO backward-pointing lines!
-- NO other arrows! Do not draw arrows from services to S3 or Kafka or Clients. Keep it minimal and clean!
+- DO NOT create any extra arrows beyond these 11!
 
-3. DATABASE ERD TABLES (PLACED AT Y: 720 TO 850 WITH CLEAR CLEARANCE):
-The microservices end at Y: 560. Place ERD tables comfortably below at Y: 750 (never overlapping services):
-- table-users (X: 100, Y: 750): id (PK, uuid), phone_number (text), username (text), avatar_url (text), created_at (timestamptz)
-- table-conversations (X: 520, Y: 750): id (PK, uuid), is_group (boolean), name (text), created_at (timestamptz)
-- table-members (X: 980, Y: 750): id (PK, uuid), conversation_id (FK, uuid), user_id (FK, uuid), role (text), last_read_at (timestamptz)
-- table-messages (X: 1500, Y: 750): id (PK, uuid), conversation_id (FK, uuid), sender_id (FK, uuid), content (text), media_url (text), created_at (timestamptz)
+3. DATABASE ERD TABLES (PLACED AT Y: 560 TO 700 WITH CLEAR CLEARANCE):
+The microservices end at Y: 460. Place ERD tables below at Y: 580:
+- table-users (X: 80, Y: 580): id (PK, uuid), phone_number (text), username (text), avatar_url (text), created_at (timestamptz)
+- table-conversations (X: 480, Y: 580): id (PK, uuid), is_group (boolean), name (text), created_at (timestamptz)
+- table-members (X: 880, Y: 580): id (PK, uuid), conversation_id (FK, uuid), user_id (FK, uuid), role (text), last_read_at (timestamptz)
+- table-messages (X: 1280, Y: 580): id (PK, uuid), conversation_id (FK, uuid), sender_id (FK, uuid), content (text), media_url (text), created_at (timestamptz)
 Connect foreign keys strictly left-to-right between adjacent tables using connectRelationship.
 
 4. TECHNICAL SPECIFICATION IN THE DOC (replaceDoc):

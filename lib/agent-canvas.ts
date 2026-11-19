@@ -75,6 +75,8 @@ function createArrowBetween(
   const toBounds = editor.getShapePageBounds(to.id);
   if (!fromBounds || !toBounds) return fail("Could not resolve shape bounds");
 
+  const cleanLabel = label && label.length > 28 ? `${label.slice(0, 26)}…` : label;
+
   editor.createShape({
     id: arrowId,
     type: "arrow",
@@ -82,8 +84,9 @@ function createArrowBetween(
       // Plain {x, y}: tldraw records can't hold class instances like the Vec that .center returns.
       start: { x: fromBounds.center.x, y: fromBounds.center.y },
       end: { x: toBounds.center.x, y: toBounds.center.y },
+      size: "s",
       ...(color && { color }),
-      ...(label && { richText: richText(label) }),
+      ...(cleanLabel && { richText: richText(cleanLabel) }),
     },
   });
   for (const [terminal, end] of [["start", from], ["end", to]] as const) {
