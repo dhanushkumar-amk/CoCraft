@@ -188,3 +188,13 @@
     }
   }
 }
+
+/* Excalidraw Dark-Mode Canvas Aesthetics: Crisp White Outlines with Pastel Fills */
+.tl-theme__dark .tl-shape[data-shape-type="geo"] .tl-svg-container path[stroke]:not([stroke="none"]) {
+  stroke: #f8fafc !important;
+  stroke-width: 2px !important;
+}
+.tl-theme__dark .tl-shape[data-shape-type="geo"] .tl-text-label,
+.tl-theme__dark .tl-shape[data-shape-type="geo"] .tl-text {
+  color: #f8fafc !important;
+}

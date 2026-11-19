@@ -218,6 +218,15 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       return ok();
     }
 
+    case "clearCanvas": {
+      const shapeIds = Array.from(editor.getCurrentPageShapeIds());
+      if (shapeIds.length > 0) {
+        editor.deleteShapes(shapeIds);
+      }
+      idMap.clear();
+      return ok();
+    }
+
     case "createEntityTable": {
       const input = defs.createEntityTable.inputSchema.parse(rawInput);
       const rows = input.columns.map(newRow);

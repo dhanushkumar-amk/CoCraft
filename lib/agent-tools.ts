@@ -98,6 +98,10 @@ export const canvasToolDefs = {
     description: "Delete a shape from the canvas.",
     inputSchema: z.object({ id: z.string().describe("id of the shape to delete") }),
   },
+  clearCanvas: {
+    description: "Clear all shapes from the canvas before starting a fresh architecture diagram.",
+    inputSchema: z.object({}),
+  },
   createEntityTable: {
     description: "Create an ERD entity-table (a database table box with a name and typed columns) on the canvas.",
     inputSchema: z.object({
