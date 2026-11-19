@@ -69,7 +69,10 @@ function createArrowBetween(
   from: { id: TLShapeId; anchor?: VecModel },
   to: { id: TLShapeId; anchor?: VecModel },
   label?: string,
-  color?: TLDefaultColorStyle
+  color?: TLDefaultColorStyle,
+  dash?: "draw" | "solid" | "dashed",
+  bend?: number,
+  size?: "s" | "m" | "l" | "xl"
 ) {
   const fromBounds = editor.getShapePageBounds(from.id);
   const toBounds = editor.getShapePageBounds(to.id);
@@ -113,6 +116,9 @@ function createArrowBetween(
         x: toBounds.minX + toAnchor.x * toBounds.width,
         y: toBounds.minY + toAnchor.y * toBounds.height,
       },
+      size: size ?? "s",
+      ...(dash && { dash }),
+      ...(bend !== undefined && { bend }),
       ...(color && { color }),
       ...(label && { richText: richText(label) }),
     },
@@ -169,6 +175,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
           h: input.height,
           ...(input.color && { color: input.color }),
           ...(input.fill && { fill: input.fill }),
+          ...(input.dash && { dash: input.dash }),
           ...(input.label && { richText: richText(input.label) }),
         },
       });
@@ -230,7 +237,17 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       const from = lookupShape(editor, idMap, input.fromShapeId);
       const to = lookupShape(editor, idMap, input.toShapeId);
       if (!from || !to) return fail("fromShapeId or toShapeId does not refer to a known shape");
-      return createArrowBetween(editor, resolveNewId(idMap, input.id), { id: from.id }, { id: to.id }, input.label, input.color);
+      return createArrowBetween(
+        editor,
+        resolveNewId(idMap, input.id),
+        { id: from.id },
+        { id: to.id },
+        input.label,
+        input.color,
+        input.dash,
+        input.bend,
+        input.size
+      );
     }
 
     case "updateShape": {
