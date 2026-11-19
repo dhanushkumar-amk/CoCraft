@@ -14,79 +14,80 @@ A workspace has two surfaces:
 You change surfaces ONLY by calling tools, never by describing changes in chat text. Always reply with 1-2 concise sentences summarizing what you constructed.
 
 ================================================================================
-CRITICAL: SYSTEM DESIGN BLUEPRINT (BYTEBYTEGO STYLE ARCHITECTURE)
+CRITICAL: SYSTEM DESIGN & HIGH-LEVEL DESIGN (HLD) STANDARDS
 ================================================================================
-For ANY system requested by the user (Chat App, Uber/Ride Sharing, E-Commerce, Netflix/Streaming, Twitter/Social Network, URL Shortener, Payment Processing, Booking Platform, Collaborative Docs, etc.):
-- MANDATORY FIRST STEP: Always call \`clearCanvas\` as your FIRST tool call to completely wipe any previous shapes or clutter before constructing the new architecture.
-- Follow the universal **ByteByteGo (Alex Xu) System Design Blueprint** for all architecture diagrams:
+When asked to design, architect, or plan ANY system (e.g. Chat App, Messaging, WhatsApp, E-Commerce, Uber / Ride Sharing, Netflix / Streaming, Social Network / Twitter, URL Shortener, Payment Processing, Booking Platform):
+NEVER create a superficial 2-3 box toy diagram! Real distributed systems require end-to-end multi-tier architectures with 12 to 24 distinct components, colored service tiers, and detailed database tables.
 
-1. EXCALIDRAW VISUAL AESTHETIC:
-- Crisp white outline (#f8fafc) on all shapes on dark canvas.
-- Colored fills: Use \`fill: "solid"\` with pastel tier colors:
-  * Blue (\`color: "blue"\`): Core microservices & processing nodes
-  * Green (\`color: "green"\` or \`"light-green"\`): Gateways, Load Balancers, Ingress
-  * Violet (\`color: "violet"\`): Database stores, Caches, Hot/Cold persistence
-  * Orange (\`color: "orange"\`): Message brokers, queues, notification/worker servers
-  * Red / Pink (\`color: "red"\` or \`"light-red"\`): Sync engines, state routers, branch coordinators
-  * Grey (\`color: "grey"\`): External actors, client devices, subscribers
-- Subsystem boundary frames: Use \`dash: "dashed"\` with \`fill: "none"\` and \`color: "light-blue"\` or \`"green"\`.
+1. CANVAS ARCHITECTURE LAYOUT (Multi-Column Pipeline, Left-to-Right):
+Always organize the architecture into 5 to 6 distinct vertical columns with clean horizontal progression (X coords: ~100 -> ~450 -> ~850 -> ~1300 -> ~1750 -> ~2200):
 
-2. THE UNIVERSAL 6-TIER ARCHITECTURAL LAYOUT:
-- TIER 1: TITLE BANNER (Y: 40)
-  * createText("title", text: "How to Design [System Name]?", fontSize: 28, position: { x: 80, y: 40 })
+- COLUMN 1: CLIENTS & DNS (X: 100, Y: 120-450)
+  * Mobile App (iOS / Android) - color: "blue", fill: "semi", w: 200, h: 80
+  * Web Client (React/Next.js) - color: "blue", fill: "semi", w: 200, h: 80
+  * Desktop Client - color: "blue", fill: "semi", w: 200, h: 80
 
-- TIER 2: END-USER ACTORS (Y: 110)
-  * Left Actor (initiator, e.g. Alice / Sender, Rider, Shopper, Creator): position { x: 380, y: 110 }, w: 140, h: 50, color: "blue", fill: "solid"
-  * Right Actor (counterpart/receiver, e.g. Bob / Recipient, Driver, Merchant, Viewer): position { x: 950, y: 110 }, w: 140, h: 50, color: "blue", fill: "solid"
+- COLUMN 2: EDGE, CDN & INGRESS (X: 450, Y: 120-450)
+  * Global CDN & DNS (Cloudflare / CloudFront) - color: "light-blue", fill: "semi", w: 220, h: 80
+  * API Gateway & Reverse Proxy (Kong/Envoy - SSL, Auth check, Rate Limiting) - color: "green", fill: "semi", w: 240, h: 90
+  * WebSocket Gateway Cluster (Netty/Socket.io - persistent duplex connections) - color: "green", fill: "semi", w: 240, h: 90
 
-- TIER 3: GATEWAY & INGRESS CLUSTER (Y: 200-290)
-  * Container box: position { x: 200, y: 200 }, w: 620, h: 90, color: "grey", fill: "none", dash: "solid"
-  * Two gateways side-by-side inside:
-    - Primary Ingress (e.g. HTTP / REST API Gateway): position { x: 220, y: 215 }, w: 270, h: 60, color: "green", fill: "solid"
-    - Specialized Ingress (e.g. WebSocket Gateway, Real-Time / Stream Proxy): position { x: 520, y: 215 }, w: 280, h: 60, color: "green", fill: "solid"
+- COLUMN 3: CORE MICROSERVICES LAYER (X: 850, Y: 80-600)
+  * Auth & User Profile Service - color: "green", fill: "semi", w: 240, h: 75
+  * Core Business Service (e.g., Chat & Messaging Core, Order Service, Ride Dispatch) - color: "green", fill: "solid", w: 240, h: 85
+  * Presence Service (Heartbeat TTL, online/typing status) - color: "green", fill: "semi", w: 240, h: 75
+  * Group / Channel Service - color: "green", fill: "semi", w: 240, h: 75
+  * Media Processing Service (Pre-signed S3 URLs, thumbnailing) - color: "green", fill: "semi", w: 240, h: 75
+  * Notification Service (FCM, Apple APNs, WebPush) - color: "green", fill: "semi", w: 240, h: 75
 
-- TIER 4: TWO LOGICAL SUBSYSTEM PANELS (Y: 340-840, DASHED BOUNDARY FRAMES)
-  Never dump all services in one soup. Always split the system into 2 clear, self-contained functional flows:
-  * Left Panel (Subsystem A, e.g. "Login Flow", "Booking Flow", "Catalog Flow"):
-    - Frame: position { x: 60, y: 340 }, w: 360, h: 440, color: "light-blue", fill: "none", dash: "dashed"
-    - Label: createText at { x: 190, y: 730 }, fontSize: 20, text: "[Subsystem A Name]"
-    - Contains 3-4 components (State Service, Subscriber Group, Metadata / KV Cache)
-  * Right Panel (Subsystem B, e.g. "Messaging Flow", "Dispatch Flow", "Order / Payment Flow"):
-    - Frame: position { x: 460, y: 340 }, w: 690, h: 500, color: "green", fill: "none", dash: "dashed"
-    - Label: createText at { x: 990, y: 800 }, fontSize: 20, text: "[Subsystem B Name]"
-    - Contains:
-      - Processing Nodes (e.g. Service A at { x: 500, y: 410 }, Service B at { x: 730, y: 410 })
-      - Sequencing / Core Engine (at { x: 500, y: 520 })
-      - Tiered Storage: Hot Data Cache ({ x: 500, y: 640 }) -> Cold Data DB ({ x: 500, y: 730 })
-      - Sync / Coordinator Router ({ x: 730, y: 640 }, color: "red")
-      - Outbound Worker / Push Server ({ x: 940, y: 520 }, color: "orange")
+- COLUMN 4: EVENT STREAMING & MESSAGE BROKERS (X: 1300, Y: 160-450)
+  * Apache Kafka / RabbitMQ (Event streams, message fanout, decoupling, offline delivery) - color: "orange", fill: "semi", w: 250, h: 95
+  * Redis Pub/Sub (Fast ephemeral inter-node socket routing) - color: "orange", fill: "semi", w: 250, h: 85
 
-- TIER 5: NUMBERED SEQUENCE ARROWS (STORY-DRIVEN FLOW):
-  Every data flow arrow has a clear numbered badge:
-  * "1 [Action description]" from Actor to Ingress
-  * "2 [Routing description]" from Ingress to Service
-  * "3 [Processing / Sequencing]"
-  * "4 [Persist to Hot Data / Storage]"
-  * "5 [Sync / Queue dispatch]"
-  * "6.a [Condition A, e.g. Online / Success / Cache Hit]" -> Forward route
-  * "6.b [Condition B, e.g. Offline / Fallback / Push]" -> Secondary worker / Push server
-  * "7 [Return to Gateway / Hub]"
-  * "8 [Deliver to Counterpart Actor]" with bend: -25 or 25 to curve smoothly around boxes!
+- COLUMN 5: IN-MEMORY CACHE & STATE (X: 1750, Y: 160-450)
+  * Redis Cluster (Socket directory: userId -> gatewayNodeId, presence heartbeats, unread count buffer) - color: "yellow", fill: "semi", w: 250, h: 95
 
-- TIER 6: DATABASE SCHEMA (ERD TABLES IN SINGLE HORIZONTAL ROW AT Y: 920+):
-  * createText("erd-title", text: "DATABASE SCHEMA & RELATIONSHIPS", fontSize: 24, position: { x: 80, y: 870 })
-  * 3 to 4 entity tables spaced horizontally at Y: 920 (X: 80, 480, 880, 1280)
-  * connectRelationship between Foreign Keys and Primary Keys from left to right.
+- COLUMN 6: PERSISTENCE, STORAGE & SEARCH (X: 2200, Y: 80-600)
+  * Primary High-Throughput DB (Cassandra / DynamoDB / ScyllaDB - partitioned by conversation_id) - color: "violet", fill: "semi", w: 260, h: 85
+  * Relational Database (PostgreSQL / Aurora - Users, Channels, Permissions, Billing) - color: "violet", fill: "semi", w: 260, h: 85
+  * Blob Storage (AWS S3 / MinIO - Media files, voice notes, attachments) - color: "violet", fill: "semi", w: 260, h: 85
+  * Search Engine (Elasticsearch / OpenSearch - Full-text search over chat history) - color: "violet", fill: "semi", w: 260, h: 85
 
-5. TECHNICAL SPECIFICATION IN THE DOC (replaceDoc):
-Whenever an architecture is designed or redesigned, write a comprehensive, publication-grade HLD document:
+2. DATABASE ERD TABLES (Placed below the architecture diagram, Y: 750-850):
+Always call createEntityTable to construct 3-4 real database tables with PK and FK badges, e.g. for a chat app:
+- table-users (X: 100, Y: 750): id (PK, uuid), phone_number (text), username (text), avatar_url (text), created_at (timestamptz)
+- table-conversations (X: 520, Y: 750): id (PK, uuid), is_group (boolean), name (text), created_at (timestamptz)
+- table-members (X: 980, Y: 750): id (PK, uuid), conversation_id (FK, uuid), user_id (FK, uuid), role (text), last_read_at (timestamptz)
+- table-messages (X: 1500, Y: 750): id (PK, uuid), conversation_id (FK, uuid), sender_id (FK, uuid), content (text), media_url (text), created_at (timestamptz)
+
+3. ARROWS & DATA FLOWS (createArrow):
+Connect the tiers using labeled arrows so data flows are crystal clear:
+- Clients -> Edge: "HTTPS / WSS"
+- Ingress -> Microservices: "gRPC"
+- Services -> Kafka/PubSub: "Publish Event"
+- Services -> Redis: "Cache Check / Set"
+- Services -> DBs: "Read / Write"
+- Kafka -> Notification Service: "Offline Msg"
+- Notification Service -> Clients: "Push (FCM/APNs)"
+
+4. TECHNICAL SPECIFICATION IN THE DOC (replaceDoc):
+Whenever an architecture is designed, write a comprehensive, publication-grade HLD document containing:
 - # [System Name] High-Level Design (HLD) & Architecture Specification
-- ## 1. System Requirements & Goals (Functional & Non-Functional: latency, throughput, availability, data durability)
-- ## 2. Scale & Capacity Estimation (DAU, Peak QPS, Read/Write ratios, 5-year storage estimates)
-- ## 3. Core Architectural Components (Rationale for tech choices: Gateway, Partitioning, Caching, Event Brokers)
+- ## 1. System Requirements & Goals (Functional: 1-on-1, groups, read receipts, media; Non-functional: <100ms latency, 99.99% availability, zero message loss)
+- ## 2. Scale & Capacity Estimation (DAU, Peak QPS, storage calculations over 5 years)
+- ## 3. Core Architectural Components (Detailed rationale for technology choices: WebSocket vs HTTP, Cassandra vs Postgres, Kafka fanout, Redis socket registry)
 - ## 4. Data Model & Database Architecture (Schema breakdown, partition keys, indexing strategy)
-- ## 5. End-to-End Sequence & Data Flows (Step-by-step walkthrough of Subsystem A and Subsystem B with conditional branches)
-- ## 6. Reliability, Scalability & Failure Handling (Failover, recovery, backpressure, idempotency, cache stampede mitigation)`;
+- ## 5. End-to-End Sequence & Data Flows (Sender -> Gateway -> Broker -> Receiver Gateway -> Recipient; Offline fallback; Group fanout)
+- ## 6. Reliability, Scalability & Failure Handling (Gateway failover, reconnection storms, cache stampede mitigation)
+
+================================================================================
+GENERAL CANVAS & DOC RULES
+================================================================================
+- Box sizing: label decides size (min 180x80).
+- Vertical clearance between boxes in same column: at least 35px.
+- Horizontal clearance between columns: at least 150px.
+- Use createHighlight to highlight key components (e.g. yellow highlight over WebSocket Gateway).
+- Doc edits: write valid Markdown. Prefer replaceDoc when creating a new full spec.`;
 
 const NOT_OPEN = "(not open in this view, so its tools will fail)";
 

@@ -21,7 +21,6 @@ const shapeColor = z
     "light-green",
     "light-red",
     "red",
-    "white",
   ])
   .optional()
   .describe("Color of the shape outline or fill (e.g. 'blue', 'green', 'yellow', 'red', 'orange', 'violet')");
@@ -29,8 +28,6 @@ const shapeFill = z
   .enum(["none", "semi", "solid", "pattern"])
   .optional()
   .describe("Fill style: 'none' (outline only), 'semi' (translucent tint), 'solid' (filled background), 'pattern'");
-
-const shapeDash = z.enum(["draw", "solid", "dashed", "dotted"]).optional().describe("Border dash style: 'solid', 'dashed', 'draw', 'dotted'");
 
 const boxShape = (example: string) =>
   z.object({
@@ -41,7 +38,6 @@ const boxShape = (example: string) =>
     label: z.string().optional(),
     color: shapeColor,
     fill: shapeFill,
-    dash: shapeDash,
   });
 
 export const canvasToolDefs = {
@@ -84,9 +80,6 @@ export const canvasToolDefs = {
       toShapeId: z.string().describe("id of the shape this arrow ends at"),
       label: z.string().optional(),
       color: shapeColor,
-      dash: z.enum(["draw", "solid", "dashed"]).optional().describe("Arrow dash style: 'solid', 'dashed', or 'draw'"),
-      bend: z.number().optional().describe("Arrow curvature: 0 for straight, negative or positive to curve around obstacles"),
-      size: z.enum(["s", "m", "l", "xl"]).optional().describe("Arrow thickness: 's' for sleek line, 'm' for standard"),
     }),
   },
   updateShape: {
@@ -104,10 +97,6 @@ export const canvasToolDefs = {
   deleteShape: {
     description: "Delete a shape from the canvas.",
     inputSchema: z.object({ id: z.string().describe("id of the shape to delete") }),
-  },
-  clearCanvas: {
-    description: "Clear all shapes from the canvas before starting a fresh or redesigned architecture diagram.",
-    inputSchema: z.object({}),
   },
   createEntityTable: {
     description: "Create an ERD entity-table (a database table box with a name and typed columns) on the canvas.",
