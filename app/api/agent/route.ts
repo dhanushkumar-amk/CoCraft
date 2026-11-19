@@ -117,7 +117,7 @@ export async function POST(req: Request) {
   }
 
   const result = streamText({
-    model: google("gemini-2.5-flash"),
+    model: google(process.env.GEMINI_MODEL || "gemini-2.5-flash-lite"),
     system: `${SYSTEM_PROMPT}\n\nCurrent canvas state:\n${canvasContext ?? NOT_OPEN}\n\nCurrent doc state:\n${docContext ?? NOT_OPEN}`,
     tools: agentToolDefs,
     messages: await convertToModelMessages(messages),

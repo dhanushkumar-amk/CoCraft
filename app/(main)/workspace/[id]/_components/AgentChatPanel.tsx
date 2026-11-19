@@ -130,6 +130,8 @@ export function AgentChatPanel({ chat, isReady }: { chat: WorkspaceAgentChat; is
                       Upgrade
                     </button>
                   </>
+                ) : error.message.toLowerCase().includes("quota") || error.message.includes("429") ? (
+                  "Gemini API quota exceeded (Rate limit / 429). Please retry in a few moments or check your Google AI Studio plan."
                 ) : (
                   "Something went wrong. Try sending that again."
                 )}
