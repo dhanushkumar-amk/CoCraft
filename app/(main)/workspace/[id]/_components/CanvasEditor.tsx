@@ -29,17 +29,18 @@ import { AddEntityTableButton } from "@/components/EntityTable/AddEntityTableBut
 import { snapArrowBindingToRow } from "@/components/EntityTable/snapArrowToRow";
 import { useWorkspaceEditors } from "@/components/WorkspaceEditorsContext";
 import { colorForUser } from "@/lib/utils";
+import { CustomGeoShapeUtil, CustomArrowShapeUtil } from "@/lib/custom-shapes";
 
 const SAVE_DEBOUNCE_MS = 1000;
 
-const shapeUtils = [EntityTableShapeUtil];
+const shapeUtils = [EntityTableShapeUtil, CustomGeoShapeUtil, CustomArrowShapeUtil];
 
 // Our own sync server (the tldraw-sync/ Cloudflare Worker). Without it, tldraw's public demo
 // server is used: fine for trying things out, but rooms there are public and get wiped.
 const SYNC_URL = process.env.NEXT_PUBLIC_TLDRAW_SYNC_URL;
 
-// Unlike useSyncDemo, useSync doesn't add tldraw's built-in shapes itself. Built once here:
-// a new array on every render would make useSync rebuild the store in a loop.
+// Combine built-in shapes with our custom and overridden shape utils for useSync.
+// Unlike useSyncDemo (which automatically adds defaultShapeUtils), useSync requires all shape utils.
 const syncShapeUtils = [...defaultShapeUtils, ...shapeUtils];
 
 type SyncOptions = { roomId: string; users?: Parameters<typeof useSyncDemo>[0]["users"] };

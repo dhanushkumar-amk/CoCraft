@@ -75,30 +75,73 @@ function createArrowBetween(
   const toBounds = editor.getShapePageBounds(to.id);
   if (!fromBounds || !toBounds) return fail("Could not resolve shape bounds");
 
+  const dx = toBounds.center.x - fromBounds.center.x;
+  const dy = toBounds.center.y - fromBounds.center.y;
+  let defaultFromAnchor: VecModel = { x: 0.5, y: 0.5 };
+  let defaultToAnchor: VecModel = { x: 0.5, y: 0.5 };
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    if (dx >= 0) {
+      defaultFromAnchor = { x: 1, y: 0.5 };
+      defaultToAnchor = { x: 0, y: 0.5 };
+    } else {
+      defaultFromAnchor = { x: 0, y: 0.5 };
+      defaultToAnchor = { x: 1, y: 0.5 };
+    }
+  } else {
+    if (dy >= 0) {
+      defaultFromAnchor = { x: 0.5, y: 1 };
+      defaultToAnchor = { x: 0.5, y: 0 };
+    } else {
+      defaultFromAnchor = { x: 0.5, y: 0 };
+      defaultToAnchor = { x: 0.5, y: 1 };
+    }
+  }
+
+  const fromAnchor = from.anchor ?? defaultFromAnchor;
+  const toAnchor = to.anchor ?? defaultToAnchor;
+
   editor.createShape({
     id: arrowId,
     type: "arrow",
     props: {
-      // Plain {x, y}: tldraw records can't hold class instances like the Vec that .center returns.
-      start: { x: fromBounds.center.x, y: fromBounds.center.y },
-      end: { x: toBounds.center.x, y: toBounds.center.y },
+      start: {
+        x: fromBounds.minX + fromAnchor.x * fromBounds.width,
+        y: fromBounds.minY + fromAnchor.y * fromBounds.height,
+      },
+      end: {
+        x: toBounds.minX + toAnchor.x * toBounds.width,
+        y: toBounds.minY + toAnchor.y * toBounds.height,
+      },
       ...(color && { color }),
       ...(label && { richText: richText(label) }),
     },
   });
-  for (const [terminal, end] of [["start", from], ["end", to]] as const) {
-    editor.createBinding({
-      type: "arrow",
-      fromId: arrowId,
-      toId: end.id,
-      props: {
-        terminal,
-        normalizedAnchor: end.anchor ?? { x: 0.5, y: 0.5 },
-        isPrecise: !!end.anchor,
-        isExact: false,
-      },
-    });
-  }
+
+  editor.createBinding({
+    type: "arrow",
+    fromId: arrowId,
+    toId: from.id,
+    props: {
+      terminal: "start",
+      normalizedAnchor: fromAnchor,
+      isPrecise: true,
+      isExact: false,
+    },
+  });
+
+  editor.createBinding({
+    type: "arrow",
+    fromId: arrowId,
+    toId: to.id,
+    props: {
+      terminal: "end",
+      normalizedAnchor: toAnchor,
+      isPrecise: true,
+      isExact: false,
+    },
+  });
+
   return ok();
 }
 
@@ -215,6 +258,15 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       const shape = lookupShape(editor, idMap, input.id);
       if (!shape) return fail("Unknown shape id");
       editor.deleteShape(shape.id);
+      return ok();
+    }
+
+    case "clearCanvas": {
+      const shapes = editor.getCurrentPageShapes();
+      if (shapes.length > 0) {
+        editor.deleteShapes(shapes.map((s) => s.id));
+      }
+      idMap.clear();
       return ok();
     }
 

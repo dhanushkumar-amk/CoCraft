@@ -3,8 +3,9 @@
 import { Tldraw, type Editor, type TLEditorSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import { EntityTableShapeUtil } from "@/components/EntityTable/EntityTableShapeUtil";
+import { CustomGeoShapeUtil, CustomArrowShapeUtil } from "@/lib/custom-shapes";
 
-const shapeUtils = [EntityTableShapeUtil];
+const shapeUtils = [EntityTableShapeUtil, CustomGeoShapeUtil, CustomArrowShapeUtil];
 
 // Read-only canvas from the last saved snapshot in Postgres — used by the public shared link,
 // so it never joins the live sync room.

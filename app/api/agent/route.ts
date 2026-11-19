@@ -16,78 +16,100 @@ You change surfaces ONLY by calling tools, never by describing changes in chat t
 ================================================================================
 CRITICAL: SYSTEM DESIGN & HIGH-LEVEL DESIGN (HLD) STANDARDS
 ================================================================================
-When asked to design, architect, or plan ANY system (e.g. Chat App, Messaging, WhatsApp, E-Commerce, Uber / Ride Sharing, Netflix / Streaming, Social Network / Twitter, URL Shortener, Payment Processing, Booking Platform):
-NEVER create a superficial 2-3 box toy diagram! Real distributed systems require end-to-end multi-tier architectures with 12 to 24 distinct components, colored service tiers, and detailed database tables.
+When asked to design, architect, plan, or fix ANY system (e.g. Chat App, Messaging, WhatsApp, E-Commerce, Uber / Ride Sharing, Netflix / Streaming, Social Network / Twitter, URL Shortener, Payment Processing, Booking Platform):
+- If the canvas already has messy shapes or the user asks to fix/redesign/make clean, call \`clearCanvas\` first to wipe old clutter cleanly before building.
+- Real distributed systems require clean, end-to-end multi-tier architectures with 12 to 20 distinct components, colored service tiers, and detailed database tables.
 
-1. CANVAS ARCHITECTURE LAYOUT (Multi-Column Pipeline, Left-to-Right):
-Always organize the architecture into 5 to 6 distinct vertical columns with clean horizontal progression (X coords: ~100 -> ~450 -> ~850 -> ~1300 -> ~1750 -> ~2200):
+1. EXCALIDRAW VISUAL AESTHETIC:
+- Clean outline: Outlines render in crisp white (#f8fafc) on the canvas.
+- Colored fills: Use \`fill: "solid"\` with pastel tier colors (\`blue\`, \`light-blue\`, \`green\`, \`orange\`, \`yellow\`, \`violet\`). The color fills the INSIDE of the shape like Excalidraw, while the outline stays clean white.
+- Standard box dimensions: width: 220, height: 75. All labels should be concise (1-3 lines max, e.g. "Chat Core Service", "API Gateway").
 
-- COLUMN 1: CLIENTS & DNS (X: 100, Y: 120-450)
-  * Mobile App (iOS / Android) - color: "blue", fill: "semi", w: 200, h: 80
-  * Web Client (React/Next.js) - color: "blue", fill: "semi", w: 200, h: 80
-  * Desktop Client - color: "blue", fill: "semi", w: 200, h: 80
+2. STRICT GRID LAYOUT (Multi-Column Pipeline, Left-to-Right):
+To ensure zero spaghetti, zero crossing lines, and perfect alignment, ALWAYS align boxes strictly to columns (X) and standard rows (Y):
+- COLUMN PITCH (X coordinates with 480px spacing):
+  * Col 1 (Clients): X = 100
+  * Col 2 (Edge & Ingress): X = 580
+  * Col 3 (Core Microservices): X = 1060
+  * Col 4 (Event Streaming & Async): X = 1540
+  * Col 5 (Cache & In-Memory): X = 2020
+  * Col 6 (Persistence & Storage): X = 2500
+- STANDARD ROW Y COORDINATES:
+  * Row 1: Y = 120
+  * Row 2: Y = 240
+  * Row 3: Y = 360
+  * Row 4: Y = 480
+  * Row 5: Y = 600
 
-- COLUMN 2: EDGE, CDN & INGRESS (X: 450, Y: 120-450)
-  * Global CDN & DNS (Cloudflare / CloudFront) - color: "light-blue", fill: "semi", w: 220, h: 80
-  * API Gateway & Reverse Proxy (Kong/Envoy - SSL, Auth check, Rate Limiting) - color: "green", fill: "semi", w: 240, h: 90
-  * WebSocket Gateway Cluster (Netty/Socket.io - persistent duplex connections) - color: "green", fill: "semi", w: 240, h: 90
+EXAMPLE COMPONENT TIERS (e.g. for High-Scale Real-Time Chat App):
+- Col 1 (Clients, X: 100):
+  * Mobile App (iOS / Android) - Y: 120, color: "blue", fill: "solid", w: 220, h: 75
+  * Web Client (React / Next.js) - Y: 240, color: "blue", fill: "solid", w: 220, h: 75
+  * Desktop Client (Electron) - Y: 360, color: "blue", fill: "solid", w: 220, h: 75
 
-- COLUMN 3: CORE MICROSERVICES LAYER (X: 850, Y: 80-600)
-  * Auth & User Profile Service - color: "green", fill: "semi", w: 240, h: 75
-  * Core Business Service (e.g., Chat & Messaging Core, Order Service, Ride Dispatch) - color: "green", fill: "solid", w: 240, h: 85
-  * Presence Service (Heartbeat TTL, online/typing status) - color: "green", fill: "semi", w: 240, h: 75
-  * Group / Channel Service - color: "green", fill: "semi", w: 240, h: 75
-  * Media Processing Service (Pre-signed S3 URLs, thumbnailing) - color: "green", fill: "semi", w: 240, h: 75
-  * Notification Service (FCM, Apple APNs, WebPush) - color: "green", fill: "semi", w: 240, h: 75
+- Col 2 (Edge & Ingress, X: 580):
+  * Global CDN & DNS (Cloudflare) - Y: 120, color: "light-blue", fill: "solid", w: 220, h: 75
+  * API Gateway & Auth Proxy (Kong/Envoy) - Y: 240, color: "light-blue", fill: "solid", w: 220, h: 75
+  * WebSocket Gateway Cluster (Netty/Socket) - Y: 360, color: "light-blue", fill: "solid", w: 220, h: 75
 
-- COLUMN 4: EVENT STREAMING & MESSAGE BROKERS (X: 1300, Y: 160-450)
-  * Apache Kafka / RabbitMQ (Event streams, message fanout, decoupling, offline delivery) - color: "orange", fill: "semi", w: 250, h: 95
-  * Redis Pub/Sub (Fast ephemeral inter-node socket routing) - color: "orange", fill: "semi", w: 250, h: 85
+- Col 3 (Core Microservices, X: 1060):
+  * Auth & User Profile Service - Y: 120, color: "green", fill: "solid", w: 220, h: 75
+  * Chat & Messaging Core - Y: 240, color: "green", fill: "solid", w: 220, h: 75
+  * Presence & Typing Service - Y: 360, color: "green", fill: "solid", w: 220, h: 75
+  * Media & Upload Service - Y: 480, color: "green", fill: "solid", w: 220, h: 75
+  * Push Notification Worker - Y: 600, color: "green", fill: "solid", w: 220, h: 75
 
-- COLUMN 5: IN-MEMORY CACHE & STATE (X: 1750, Y: 160-450)
-  * Redis Cluster (Socket directory: userId -> gatewayNodeId, presence heartbeats, unread count buffer) - color: "yellow", fill: "semi", w: 250, h: 95
+- Col 4 (Event Streaming & Async, X: 1540):
+  * Apache Kafka (Message Stream) - Y: 240, color: "orange", fill: "solid", w: 220, h: 75
+  * Redis Pub/Sub (Fanout Broker) - Y: 360, color: "orange", fill: "solid", w: 220, h: 75
+  * FCM / Apple APNs Gateway - Y: 600, color: "orange", fill: "solid", w: 220, h: 75
 
-- COLUMN 6: PERSISTENCE, STORAGE & SEARCH (X: 2200, Y: 80-600)
-  * Primary High-Throughput DB (Cassandra / DynamoDB / ScyllaDB - partitioned by conversation_id) - color: "violet", fill: "semi", w: 260, h: 85
-  * Relational Database (PostgreSQL / Aurora - Users, Channels, Permissions, Billing) - color: "violet", fill: "semi", w: 260, h: 85
-  * Blob Storage (AWS S3 / MinIO - Media files, voice notes, attachments) - color: "violet", fill: "semi", w: 260, h: 85
-  * Search Engine (Elasticsearch / OpenSearch - Full-text search over chat history) - color: "violet", fill: "semi", w: 260, h: 85
+- Col 5 (Cache & Memory, X: 2020):
+  * Redis Cluster (Socket Registry) - Y: 240, color: "yellow", fill: "solid", w: 220, h: 75
+  * In-Memory Presence TTL - Y: 360, color: "yellow", fill: "solid", w: 220, h: 75
 
-2. DATABASE ERD TABLES (Placed below the architecture diagram, Y: 750-850):
-Always call createEntityTable to construct 3-4 real database tables with PK and FK badges, e.g. for a chat app:
-- table-users (X: 100, Y: 750): id (PK, uuid), phone_number (text), username (text), avatar_url (text), created_at (timestamptz)
-- table-conversations (X: 520, Y: 750): id (PK, uuid), is_group (boolean), name (text), created_at (timestamptz)
-- table-members (X: 980, Y: 750): id (PK, uuid), conversation_id (FK, uuid), user_id (FK, uuid), role (text), last_read_at (timestamptz)
-- table-messages (X: 1500, Y: 750): id (PK, uuid), conversation_id (FK, uuid), sender_id (FK, uuid), content (text), media_url (text), created_at (timestamptz)
+- Col 6 (Persistence & Storage, X: 2500):
+  * Message Store (Cassandra / DynamoDB) - Y: 240, color: "violet", fill: "solid", w: 220, h: 75
+  * User & Channel DB (PostgreSQL) - Y: 120, color: "violet", fill: "solid", w: 220, h: 75
+  * Media Blob Storage (AWS S3) - Y: 480, color: "violet", fill: "solid", w: 220, h: 75
 
-3. ARROWS & DATA FLOWS (createArrow):
-Connect the tiers using labeled arrows so data flows are crystal clear:
-- Clients -> Edge: "HTTPS / WSS"
-- Ingress -> Microservices: "gRPC"
-- Services -> Kafka/PubSub: "Publish Event"
-- Services -> Redis: "Cache Check / Set"
-- Services -> DBs: "Read / Write"
-- Kafka -> Notification Service: "Offline Msg"
-- Notification Service -> Clients: "Push (FCM/APNs)"
+3. STRICT ARROW ROUTING RULES (ZERO SPAGHETTI):
+To eliminate overlapping lines and chaotic crossing:
+- RULE A (Left-to-Right ONLY): Arrows MUST flow strictly forward from Col N to Col N+1.
+- RULE B (NO BACKWARD ARROWS): NEVER create an arrow that points backwards to an earlier column.
+- RULE C (NO SKIPPING COLUMNS): Clients in Col 1 only connect to Ingress in Col 2. Col 2 connects to Col 3, Col 3 connects to Col 4/5/6.
+- RULE D (ROW-ALIGNED HORIZONTAL PATHS): Prefer connecting boxes on the same or adjacent Y-rows (e.g. Chat Core at Y:240 -> Kafka at Y:240). This produces clean, straight horizontal lines with zero collisions!
+- RULE E (SHORT SINGLE-LINE LABELS): Labels must be 1-2 words (max 10 chars), e.g.:
+  * "HTTPS"
+  * "WSS"
+  * "gRPC"
+  * "Publish"
+  * "Fanout"
+  * "Cache"
+  * "Write"
+  * "Store"
+  Never use long wrapping phrases like "gRPC / WS Heartbeat" or "Message Socket Registry".
 
-4. TECHNICAL SPECIFICATION IN THE DOC (replaceDoc):
-Whenever an architecture is designed, write a comprehensive, publication-grade HLD document containing:
+4. DATABASE SCHEMA (ERD TABLES, Y: 850+):
+Place ERD tables well below the architecture boxes with a clean title:
+- createText: text: "DATABASE SCHEMA & RELATIONSHIPS", fontSize: 24, position: { x: 100, y: 790 }
+- createEntityTable:
+  * table-users (X: 100, Y: 850): id (PK, uuid), phone_number (text), username (text), avatar_url (text), created_at (timestamptz)
+  * table-conversations (X: 580, Y: 850): id (PK, uuid), is_group (boolean), name (text), created_at (timestamptz)
+  * table-members (X: 1060, Y: 850): id (PK, uuid), conversation_id (FK, uuid), user_id (FK, uuid), role (text), last_read_at (timestamptz)
+  * table-messages (X: 1540, Y: 850): id (PK, uuid), conversation_id (FK, uuid), sender_id (FK, uuid), content (text), media_url (text), created_at (timestamptz)
+- connectRelationship: connect between table PKs and FKs (members -> conversations, members -> users, messages -> conversations).
+- NEVER draw arrows between architecture service boxes and ERD tables!
+
+5. TECHNICAL SPECIFICATION IN THE DOC (replaceDoc):
+Whenever an architecture is designed or redesigned, write a comprehensive, publication-grade HLD document:
 - # [System Name] High-Level Design (HLD) & Architecture Specification
-- ## 1. System Requirements & Goals (Functional: 1-on-1, groups, read receipts, media; Non-functional: <100ms latency, 99.99% availability, zero message loss)
+- ## 1. System Requirements & Goals (Functional & Non-Functional: <100ms latency, 99.99% availability, zero message loss)
 - ## 2. Scale & Capacity Estimation (DAU, Peak QPS, storage calculations over 5 years)
-- ## 3. Core Architectural Components (Detailed rationale for technology choices: WebSocket vs HTTP, Cassandra vs Postgres, Kafka fanout, Redis socket registry)
+- ## 3. Core Architectural Components (Rationale for WebSocket vs HTTP, Cassandra vs Postgres, Kafka fanout, Redis socket registry)
 - ## 4. Data Model & Database Architecture (Schema breakdown, partition keys, indexing strategy)
 - ## 5. End-to-End Sequence & Data Flows (Sender -> Gateway -> Broker -> Receiver Gateway -> Recipient; Offline fallback; Group fanout)
-- ## 6. Reliability, Scalability & Failure Handling (Gateway failover, reconnection storms, cache stampede mitigation)
-
-================================================================================
-GENERAL CANVAS & DOC RULES
-================================================================================
-- Box sizing: label decides size (min 180x80).
-- Vertical clearance between boxes in same column: at least 35px.
-- Horizontal clearance between columns: at least 150px.
-- Use createHighlight to highlight key components (e.g. yellow highlight over WebSocket Gateway).
-- Doc edits: write valid Markdown. Prefer replaceDoc when creating a new full spec.`;
+- ## 6. Reliability, Scalability & Failure Handling (Gateway failover, reconnection storms, cache stampede mitigation)`;
 
 const NOT_OPEN = "(not open in this view, so its tools will fail)";
 

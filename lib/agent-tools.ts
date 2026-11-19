@@ -21,6 +21,7 @@ const shapeColor = z
     "light-green",
     "light-red",
     "red",
+    "white",
   ])
   .optional()
   .describe("Color of the shape outline or fill (e.g. 'blue', 'green', 'yellow', 'red', 'orange', 'violet')");
@@ -97,6 +98,10 @@ export const canvasToolDefs = {
   deleteShape: {
     description: "Delete a shape from the canvas.",
     inputSchema: z.object({ id: z.string().describe("id of the shape to delete") }),
+  },
+  clearCanvas: {
+    description: "Clear all shapes from the canvas before starting a fresh or redesigned architecture diagram.",
+    inputSchema: z.object({}),
   },
   createEntityTable: {
     description: "Create an ERD entity-table (a database table box with a name and typed columns) on the canvas.",
