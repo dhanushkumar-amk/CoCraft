@@ -58,9 +58,65 @@ function lookupTable(editor: Editor, idMap: ShapeIdMap, id: string) {
 }
 
 // Where an arrow should attach on a table: the vertical center of the named column's row.
-function rowAnchor(table: EntityTableShape, columnName: string): VecModel {
+function rowAnchor(table: EntityTableShape, columnName: string, isSource: boolean): VecModel {
   const index = table.props.rows.findIndex((r) => r.name === columnName);
-  return { x: 0.5, y: index === -1 ? 0.5 : rowAnchorY(index, table.props.rows.length) };
+  const y = index === -1 ? 0.5 : rowAnchorY(index, table.props.rows.length);
+  return { x: isSource ? 1.0 : 0.0, y };
+}
+
+interface BoundsLike {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+  w: number;
+  h: number;
+  center: { x: number; y: number };
+}
+
+function computeSmartPorts(
+  fromBounds: BoundsLike,
+  toBounds: BoundsLike,
+  fromAnchorOverride?: VecModel,
+  toAnchorOverride?: VecModel
+) {
+  const dx = toBounds.center.x - fromBounds.center.x;
+  const dy = toBounds.center.y - fromBounds.center.y;
+
+  let fromAnchor: VecModel;
+  let toAnchor: VecModel;
+  let start: { x: number; y: number };
+  let end: { x: number; y: number };
+
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    // Horizontal flow (dominant in architecture diagrams)
+    if (dx >= 0) {
+      fromAnchor = fromAnchorOverride ?? { x: 1.0, y: 0.5 };
+      toAnchor = toAnchorOverride ?? { x: 0.0, y: 0.5 };
+      start = { x: fromBounds.maxX, y: fromBounds.minY + fromBounds.h * fromAnchor.y };
+      end = { x: toBounds.minX, y: toBounds.minY + toBounds.h * toAnchor.y };
+    } else {
+      fromAnchor = fromAnchorOverride ?? { x: 0.0, y: 0.5 };
+      toAnchor = toAnchorOverride ?? { x: 1.0, y: 0.5 };
+      start = { x: fromBounds.minX, y: fromBounds.minY + fromBounds.h * fromAnchor.y };
+      end = { x: toBounds.maxX, y: toBounds.minY + toBounds.h * toAnchor.y };
+    }
+  } else {
+    // Vertical flow
+    if (dy >= 0) {
+      fromAnchor = fromAnchorOverride ?? { x: 0.5, y: 1.0 };
+      toAnchor = toAnchorOverride ?? { x: 0.5, y: 0.0 };
+      start = { x: fromBounds.minX + fromBounds.w * fromAnchor.x, y: fromBounds.maxY };
+      end = { x: toBounds.minX + toBounds.w * toAnchor.x, y: toBounds.minY };
+    } else {
+      fromAnchor = fromAnchorOverride ?? { x: 0.5, y: 0.0 };
+      toAnchor = toAnchorOverride ?? { x: 0.5, y: 1.0 };
+      start = { x: fromBounds.minX + fromBounds.w * fromAnchor.x, y: fromBounds.minY };
+      end = { x: toBounds.minX + toBounds.w * toAnchor.x, y: toBounds.maxY };
+    }
+  }
+
+  return { start, end, fromAnchor, toAnchor };
 }
 
 function createArrowBetween(
@@ -75,29 +131,35 @@ function createArrowBetween(
   const toBounds = editor.getShapePageBounds(to.id);
   if (!fromBounds || !toBounds) return fail("Could not resolve shape bounds");
 
-  const cleanLabel = label && label.length > 28 ? `${label.slice(0, 26)}…` : label;
+  const cleanLabel = label && label.length > 24 ? `${label.slice(0, 22)}…` : label;
+  const { start, end, fromAnchor, toAnchor } = computeSmartPorts(fromBounds, toBounds, from.anchor, to.anchor);
 
   editor.createShape({
     id: arrowId,
     type: "arrow",
     props: {
-      // Plain {x, y}: tldraw records can't hold class instances like the Vec that .center returns.
-      start: { x: fromBounds.center.x, y: fromBounds.center.y },
-      end: { x: toBounds.center.x, y: toBounds.center.y },
+      start,
+      end,
       size: "s",
       ...(color && { color }),
       ...(cleanLabel && { richText: richText(cleanLabel) }),
     },
   });
-  for (const [terminal, end] of [["start", from], ["end", to]] as const) {
+
+  const endpoints = [
+    { terminal: "start" as const, id: from.id, anchor: fromAnchor },
+    { terminal: "end" as const, id: to.id, anchor: toAnchor },
+  ];
+
+  for (const { terminal, id, anchor } of endpoints) {
     editor.createBinding({
       type: "arrow",
       fromId: arrowId,
-      toId: end.id,
+      toId: id,
       props: {
         terminal,
-        normalizedAnchor: end.anchor ?? { x: 0.5, y: 0.5 },
-        isPrecise: !!end.anchor,
+        normalizedAnchor: anchor,
+        isPrecise: true,
         isExact: false,
       },
     });
@@ -118,6 +180,19 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
     case "createRectangle":
     case "createEllipse": {
       const input = defs[toolName].inputSchema.parse(rawInput);
+      let width = input.width;
+      let height = input.height;
+      if (input.label) {
+        const textLen = input.label.length;
+        // Eraser-style auto-sizing: prevent text from wrapping awkwardly or overflowing
+        const minW = Math.max(width, Math.min(320, Math.max(200, textLen * 7.5 + 40)));
+        width = Math.round(minW);
+        const usableWidth = width - 36;
+        const charsPerLine = Math.max(12, Math.floor(usableWidth / 8));
+        const estimatedLines = Math.max(1, Math.ceil(textLen / charsPerLine));
+        const minH = Math.max(height, 50 + estimatedLines * 20);
+        height = Math.round(minH);
+      }
       editor.createShape({
         id: resolveNewId(idMap, input.id),
         type: "geo",
@@ -125,8 +200,8 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         y: input.position.y,
         props: {
           geo: toolName === "createRectangle" ? "rectangle" : "ellipse",
-          w: input.width,
-          h: input.height,
+          w: width,
+          h: height,
           ...(input.color && { color: input.color }),
           ...(input.fill && { fill: input.fill }),
           ...(input.label && { richText: richText(input.label) }),
@@ -152,8 +227,9 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
 
     case "createHighlight": {
       const input = defs.createHighlight.inputSchema.parse(rawInput);
+      const highlightId = resolveNewId(idMap, input.id);
       editor.createShape({
-        id: resolveNewId(idMap, input.id),
+        id: highlightId,
         type: "geo",
         x: input.position.x,
         y: input.position.y,
@@ -166,6 +242,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
           dash: "solid",
         },
       });
+      editor.sendToBack([highlightId]);
       return ok();
     }
 
@@ -197,14 +274,28 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       const input = defs.updateShape.inputSchema.parse(rawInput);
       const shape = lookupShape(editor, idMap, input.id);
       if (!shape) return fail("Unknown shape id");
+      let width = input.width;
+      let height = input.height;
+      if (input.label) {
+        const textLen = input.label.length;
+        const baseW = width ?? ("props" in shape && "w" in shape.props ? (shape.props.w as number) : 200);
+        const baseH = height ?? ("props" in shape && "h" in shape.props ? (shape.props.h as number) : 75);
+        const minW = Math.max(baseW, Math.min(320, Math.max(200, textLen * 7.5 + 40)));
+        width = Math.round(minW);
+        const usableWidth = width - 36;
+        const charsPerLine = Math.max(12, Math.floor(usableWidth / 8));
+        const estimatedLines = Math.max(1, Math.ceil(textLen / charsPerLine));
+        const minH = Math.max(baseH, 50 + estimatedLines * 20);
+        height = Math.round(minH);
+      }
       // Shape type is only known at runtime, so the patch uses tldraw's loose partial type.
       editor.updateShape({
         id: shape.id,
         type: shape.type,
         ...(input.position && { x: input.position.x, y: input.position.y }),
         props: {
-          ...(input.width && { w: input.width }),
-          ...(input.height && { h: input.height }),
+          ...(width !== undefined && { w: width }),
+          ...(height !== undefined && { h: height }),
           ...(input.color && { color: input.color }),
           ...(input.fill && { fill: input.fill }),
           ...(input.label && "richText" in shape.props && { richText: richText(input.label) }),
@@ -264,11 +355,14 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       const fromTable = lookupTable(editor, idMap, input.fromTableId);
       const toTable = lookupTable(editor, idMap, input.toTableId);
       if (!fromTable || !toTable) return fail("Unknown table id");
+      const fromBounds = editor.getShapePageBounds(fromTable.id);
+      const toBounds = editor.getShapePageBounds(toTable.id);
+      const isFromLeft = fromBounds && toBounds ? fromBounds.center.x <= toBounds.center.x : true;
       return createArrowBetween(
         editor,
         resolveNewId(idMap, input.id),
-        { id: fromTable.id, anchor: rowAnchor(fromTable, input.fromColumnName) },
-        { id: toTable.id, anchor: rowAnchor(toTable, input.toColumnName) }
+        { id: fromTable.id, anchor: rowAnchor(fromTable, input.fromColumnName, isFromLeft) },
+        { id: toTable.id, anchor: rowAnchor(toTable, input.toColumnName, !isFromLeft) }
       );
     }
 
