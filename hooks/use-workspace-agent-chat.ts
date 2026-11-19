@@ -5,7 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, lastAssistantMessageIsCompleteWithToolCalls } from "ai";
 import type { Editor } from "tldraw";
 import type { BlockNoteEditor } from "@blocknote/core";
-import { agentToolDefs, docToolDefs, fail, ok, type ToolResult } from "@/lib/agent-tools";
+import { agentToolDefs, docToolDefs, fail, type ToolResult } from "@/lib/agent-tools";
 import { PROMPT_LIMIT_ERROR, UPGRADE_REASONS } from "@/lib/plan-limits";
 import { executeCanvasTool, summarizeCanvas, type ShapeIdMap } from "@/lib/agent-canvas";
 import { executeDocTool, summarizeDoc } from "@/lib/agent-doc";
@@ -18,15 +18,13 @@ type Editors = { canvasEditor: Editor | null; docEditor: BlockNoteEditor | null 
 function runTool({ canvasEditor, docEditor }: Editors, idMap: ShapeIdMap, toolName: string, input: unknown): ToolResult {
   try {
     if (toolName in docToolDefs) {
-      if (!docEditor) {
-        return ok();
-      }
-      return executeDocTool(docEditor, toolName, input);
+      return docEditor
+        ? executeDocTool(docEditor, toolName, input)
+        : fail("The doc isn't open in this view. Tell the user to switch to the Both or Document view.");
     }
-    if (!canvasEditor) {
-      return ok();
-    }
-    return executeCanvasTool(canvasEditor, idMap, toolName, input);
+    return canvasEditor
+      ? executeCanvasTool(canvasEditor, idMap, toolName, input)
+      : fail("The canvas isn't open in this view. Tell the user to switch to the Both or Canvas view.");
   } catch (err) {
     return fail(err instanceof Error ? err.message : "Tool failed");
   }
