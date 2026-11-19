@@ -104,6 +104,9 @@ function createArrowBetween(
   const fromAnchor = from.anchor ?? defaultFromAnchor;
   const toAnchor = to.anchor ?? defaultToAnchor;
 
+  // Truncate excessively long arrow labels to keep canvas readable
+  const cleanLabel = label && label.length > 36 ? `${label.slice(0, 34)}…` : label;
+
   editor.createShape({
     id: arrowId,
     type: "arrow",
@@ -120,7 +123,7 @@ function createArrowBetween(
       ...(dash && { dash }),
       ...(bend !== undefined && { bend }),
       ...(color && { color }),
-      ...(label && { richText: richText(label) }),
+      ...(cleanLabel && { richText: richText(cleanLabel) }),
     },
   });
 
@@ -164,6 +167,9 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
     case "createRectangle":
     case "createEllipse": {
       const input = defs[toolName].inputSchema.parse(rawInput);
+      const isBoxWithLabel = Boolean(input.label);
+      const w = isBoxWithLabel && toolName === "createRectangle" ? Math.max(input.width, 190) : input.width;
+      const h = isBoxWithLabel && toolName === "createRectangle" ? Math.max(input.height, 55) : input.height;
       editor.createShape({
         id: resolveNewId(idMap, input.id),
         type: "geo",
@@ -171,8 +177,8 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         y: input.position.y,
         props: {
           geo: toolName === "createRectangle" ? "rectangle" : "ellipse",
-          w: input.width,
-          h: input.height,
+          w,
+          h,
           ...(input.color && { color: input.color }),
           ...(input.fill && { fill: input.fill }),
           ...(input.dash && { dash: input.dash }),

@@ -14,11 +14,7 @@ import { ShareDialog } from "./_components/ShareDialog";
 import { getEntitlements, workspaceOwnerId, workspaceOwnerSelect } from "@/lib/billing";
 import { PlanButton } from "@/components/PlanButton";
 import { WorkspaceEditorsProvider } from "@/components/WorkspaceEditorsContext";
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from "@/components/ui/resizable";
+import { cn } from "@/lib/utils";
 
 type ViewMode = "doc" | "canvas" | "both";
 
@@ -49,9 +45,6 @@ export default async function WorkspacePage({
   });
   if (!workspace) notFound();
   const entitlements = await getEntitlements(workspaceOwnerId(workspace));
-
-  const showDoc = view === "doc" || view === "both";
-  const showCanvas = view === "canvas" || view === "both";
 
   return (
     // Lets header UI (agent panel, Share dialog) reach the live doc and canvas editors.
@@ -104,30 +97,40 @@ export default async function WorkspacePage({
           </div>
         </header>
 
-        {/* key gives each view a fresh panel group, so an old layout isn't applied to new panels */}
-        <ResizablePanelGroup key={view} orientation="horizontal" className="flex-1">
-          {showDoc && (
-            <ResizablePanel defaultSize={35} minSize={20}>
-              <DocEditor
-                key={id}
-                workspaceId={id}
-                initialContent={workspace.doc?.content as Block[] | null}
-                initialState={
-                  workspace.doc?.yjsState ? Buffer.from(workspace.doc.yjsState).toString("base64") : null
-                }
-              />
-            </ResizablePanel>
-          )}
-          {showDoc && showCanvas && <ResizableHandle withHandle />}
-          {showCanvas && (
-            <ResizablePanel defaultSize={75} minSize={20}>
-              <CanvasEditor
-                workspaceId={id}
-                initialSnapshot={workspace.canvas?.content as TLEditorSnapshot | null}
-              />
-            </ResizablePanel>
-          )}
-        </ResizablePanelGroup>
+        {/* Both editors stay mounted so agent tools (canvas + doc) always work across all view modes */}
+        <div className="flex-1 relative flex overflow-hidden">
+          {/* Document surface */}
+          <div
+            style={{ display: view === "canvas" ? "none" : undefined }}
+            className={cn(
+              "h-full overflow-hidden",
+              view === "both" ? "w-[38%] border-r border-white/10 shrink-0" : "w-full"
+            )}
+          >
+            <DocEditor
+              key={id}
+              workspaceId={id}
+              initialContent={workspace.doc?.content as Block[] | null}
+              initialState={
+                workspace.doc?.yjsState ? Buffer.from(workspace.doc.yjsState).toString("base64") : null
+              }
+            />
+          </div>
+
+          {/* Canvas surface */}
+          <div
+            style={{ display: view === "doc" ? "none" : undefined }}
+            className={cn(
+              "h-full overflow-hidden flex-1",
+              view === "canvas" ? "w-full" : ""
+            )}
+          >
+            <CanvasEditor
+              workspaceId={id}
+              initialSnapshot={workspace.canvas?.content as TLEditorSnapshot | null}
+            />
+          </div>
+        </div>
       </div>
     </WorkspaceEditorsProvider>
   );
