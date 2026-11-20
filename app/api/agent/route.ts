@@ -1,5 +1,6 @@
 import { google } from "@ai-sdk/google";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createGroq } from "@ai-sdk/groq";
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { agentToolDefs } from "@/lib/agent-tools";
 import { PROMPT_LIMIT_ERROR } from "@/lib/plan-limits";
@@ -11,21 +12,31 @@ const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
 });
 
-function selectModel() {
-  const provider = (process.env.AI_PROVIDER || (process.env.OPENROUTER_API_KEY ? "openrouter" : "google")).toLowerCase();
+const groq = createGroq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
-  if (provider === "google") {
+function selectModel() {
+  const provider = (process.env.AI_PROVIDER || "groq").toLowerCase();
+
+  if (provider === "groq" && process.env.GROQ_API_KEY) {
     return {
-      isGoogle: true,
-      model: google(process.env.GEMINI_MODEL || "gemini-2.5-flash"),
+      isGoogle: false,
+      model: groq(process.env.GROQ_MODEL || "qwen/qwen3.8-27b"),
     };
   }
 
-  // OpenRouter (Open-Source Models: default openrouter/free)
-  const modelName = process.env.OPENROUTER_MODEL || "openrouter/free";
+  if (provider === "openrouter" && process.env.OPENROUTER_API_KEY) {
+    const modelName = process.env.OPENROUTER_MODEL || "openrouter/free";
+    return {
+      isGoogle: false,
+      model: openrouter(modelName),
+    };
+  }
+
   return {
-    isGoogle: false,
-    model: openrouter(modelName),
+    isGoogle: true,
+    model: google(process.env.GEMINI_MODEL || "gemini-2.5-flash"),
   };
 }
 
@@ -129,7 +140,7 @@ export async function POST(req: Request) {
   ) as typeof agentToolDefs);
 
   const result = streamText({
-    model,
+    model: model as Parameters<typeof streamText>[0]["model"],
     system: `${SYSTEM_PROMPT}\n\nCurrent canvas state:\n${canvasContext || EMPTY_CANVAS}\n\nCurrent doc state:\n${docContext || EMPTY_DOC}`,
     tools: activeTools,
     messages: await convertToModelMessages(messages),
