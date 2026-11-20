@@ -1,10 +1,33 @@
 import { google } from "@ai-sdk/google";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { agentToolDefs } from "@/lib/agent-tools";
 import { PROMPT_LIMIT_ERROR } from "@/lib/plan-limits";
 import { checkUser } from "@/actions/check-user";
 import { canAccessWorkspace } from "@/lib/workspace-access";
 import { getPromptUsage, getWorkspaceOwnerId, recordPrompt } from "@/lib/billing";
+
+const openrouter = createOpenRouter({
+  apiKey: process.env.OPENROUTER_API_KEY,
+});
+
+function selectModel() {
+  const provider = (process.env.AI_PROVIDER || (process.env.OPENROUTER_API_KEY ? "openrouter" : "google")).toLowerCase();
+
+  if (provider === "google") {
+    return {
+      isGoogle: true,
+      model: google(process.env.GEMINI_MODEL || "gemini-2.5-flash"),
+    };
+  }
+
+  // OpenRouter (Open-Source Models: default openrouter/free)
+  const modelName = process.env.OPENROUTER_MODEL || "openrouter/free";
+  return {
+    isGoogle: false,
+    model: openrouter(modelName),
+  };
+}
 
 const SYSTEM_PROMPT = `You are CoCraft's Principal Distributed Systems Architect and Workspace Agent.
 A workspace has two surfaces:
@@ -133,14 +156,14 @@ export async function POST(req: Request) {
     if (used >= limit) return Response.json({ error: PROMPT_LIMIT_ERROR, used, limit }, { status: 402 });
   }
 
+  const { model, isGoogle } = selectModel();
+
   const result = streamText({
-    model: google(process.env.GEMINI_MODEL || "gemini-2.5-flash-lite"),
+    model,
     system: `${SYSTEM_PROMPT}\n\nCurrent canvas state:\n${canvasContext || EMPTY_CANVAS}\n\nCurrent doc state:\n${docContext || EMPTY_DOC}`,
     tools: agentToolDefs,
     messages: await convertToModelMessages(messages),
-    providerOptions: {
-      google: { thinkingConfig: { includeThoughts: true } },
-    },
+    ...(isGoogle ? { providerOptions: { google: { thinkingConfig: { includeThoughts: true } } } } : {}),
     onFinish: async () => {
       if (ownerId) await recordPrompt(ownerId, user.id, workspaceId);
     },
