@@ -192,24 +192,46 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       }
       idMap.clear();
 
-      const startX = 80;
-      const colSpacing = 340; // 80, 420, 760, 1100, 1440
-      const nodeW = 220;
-      const nodeH = 75;
-      const centerY = 250;
+      // System Title at top left
+      const titleId = resolveNewId(idMap, "system-title");
+      editor.createShape({
+        id: titleId,
+        type: "text",
+        x: 80,
+        y: 35,
+        props: {
+          richText: richText(`${input.systemName} — Distributed Architecture`),
+          color: "blue",
+          size: "m",
+        },
+      });
 
-      // 2. Render each architectural column
+      const startX = 80;
+      const colSpacing = 420; // 80, 500, 920, 1340, 1760
+      const nodeW = 260;
+      const nodeH = 92;
+      const nodeGap = 50;
+      const spacing = nodeH + nodeGap; // 142px
+
+      // 2. Compute balanced grid coordinates
+      const maxCount = Math.max(...input.columns.map((c) => c.nodes.length));
+      const tallestHeight = (maxCount - 1) * spacing + nodeH;
+      const tallestCenterY = 150 + tallestHeight / 2;
+
+      const nodePositions = new Map<string, { x: number; y: number; w: number; h: number }>();
+
+      // Render each architectural column
       input.columns.forEach((col, cIndex) => {
         const colX = startX + cIndex * colSpacing;
         const count = col.nodes.length;
 
-        // Tier Header Text (Eraser.io style)
+        // Tier Header Text (Eraser.io style) at Y: 95
         const headerId = resolveNewId(idMap, `header-${cIndex}`);
         editor.createShape({
           id: headerId,
           type: "text",
           x: colX,
-          y: 75,
+          y: 95,
           props: {
             richText: richText(col.tierName.toUpperCase()),
             color: "grey",
@@ -217,13 +239,12 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
           },
         });
 
-        // Calculate balanced vertical spacing
-        const spacing = count <= 2 ? 140 : count === 3 ? 120 : 100;
-        const totalH = (count - 1) * spacing;
-        const startY = centerY - totalH / 2;
+        const colHeight = (count - 1) * spacing + nodeH;
+        const colStartY = tallestCenterY - colHeight / 2;
 
         col.nodes.forEach((node, nIndex) => {
-          const nodeY = startY + nIndex * spacing;
+          const nodeY = Math.round(colStartY + nIndex * spacing);
+          nodePositions.set(node.id, { x: colX, y: nodeY, w: nodeW, h: nodeH });
           const nodeId = resolveNewId(idMap, node.id);
 
           // Determine semantic colors per tier
@@ -234,7 +255,9 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
             else if (cIndex === 1) defaultColor = "green";
             else if (cIndex === 2) {
               defaultColor = "green";
-              if (nIndex === 1 || node.id.includes("core")) defaultFill = "solid";
+              if (nIndex === 1 || node.id.includes("core") || node.id.includes("collab") || node.id.includes("engine")) {
+                defaultFill = "solid";
+              }
             } else if (cIndex === 3) {
               const lower = (node.label + " " + node.id).toLowerCase();
               if (lower.includes("cache") || lower.includes("redis")) defaultColor = "yellow";
@@ -242,7 +265,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
               else defaultColor = "violet";
             } else {
               const lower = (node.label + " " + node.id).toLowerCase();
-              if (lower.includes("worker") || lower.includes("consumer")) defaultColor = "orange";
+              if (lower.includes("worker") || lower.includes("consumer") || lower.includes("processor")) defaultColor = "orange";
               else defaultColor = "violet";
             }
           }
@@ -253,7 +276,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
             id: nodeId,
             type: "geo",
             x: colX,
-            y: Math.round(nodeY),
+            y: nodeY,
             props: {
               geo: "rectangle",
               w: nodeW,
@@ -266,18 +289,71 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         });
       });
 
-      // 3. Connect arrows with sequential numbered step badges
+      // 3. Connect arrows with dedicated, non-overlapping smart ports
+      const outgoingBySource = new Map<string, typeof input.connections>();
+      const incomingByTarget = new Map<string, typeof input.connections>();
+
+      input.connections.forEach((conn) => {
+        if (!outgoingBySource.has(conn.fromId)) outgoingBySource.set(conn.fromId, []);
+        outgoingBySource.get(conn.fromId)!.push(conn);
+
+        if (!incomingByTarget.has(conn.toId)) incomingByTarget.set(conn.toId, []);
+        incomingByTarget.get(conn.toId)!.push(conn);
+      });
+
+      // Sort outgoing connections by target Y position so lines never cross
+      outgoingBySource.forEach((conns) => {
+        conns.sort((a, b) => {
+          const posA = nodePositions.get(a.toId)?.y ?? 0;
+          const posB = nodePositions.get(b.toId)?.y ?? 0;
+          return posA - posB;
+        });
+      });
+
+      // Sort incoming connections by source Y position so lines never cross
+      incomingByTarget.forEach((conns) => {
+        conns.sort((a, b) => {
+          const posA = nodePositions.get(a.fromId)?.y ?? 0;
+          const posB = nodePositions.get(b.fromId)?.y ?? 0;
+          return posA - posB;
+        });
+      });
+
       input.connections.forEach((conn, index) => {
         const fromShape = lookupShape(editor, idMap, conn.fromId);
         const toShape = lookupShape(editor, idMap, conn.toId);
         if (!fromShape || !toShape) return;
 
+        const outList = outgoingBySource.get(conn.fromId) ?? [];
+        const outIdx = outList.indexOf(conn);
+        const outPortY = outList.length <= 1 ? 0.5 : (outIdx + 1) / (outList.length + 1);
+
+        const inList = incomingByTarget.get(conn.toId) ?? [];
+        const inIdx = inList.indexOf(conn);
+        const inPortY = inList.length <= 1 ? 0.5 : (inIdx + 1) / (inList.length + 1);
+
         const arrowId = resolveNewId(idMap, `arrow-${conn.stepNumber ?? index + 1}`);
         const badgeLabel = String(conn.stepNumber ?? index + 1);
-        createArrowBetween(editor, arrowId, { id: fromShape.id }, { id: toShape.id }, badgeLabel, "blue");
+
+        createArrowBetween(
+          editor,
+          arrowId,
+          { id: fromShape.id, anchor: { x: 1.0, y: outPortY } },
+          { id: toShape.id, anchor: { x: 0.0, y: inPortY } },
+          badgeLabel,
+          "blue"
+        );
       });
 
-      // 4. Render Execution Flow Walkthrough Banner at bottom
+      // 4. Render Execution Flow Walkthrough Banner below all components
+      let maxBottomY = 0;
+      nodePositions.forEach((pos) => {
+        maxBottomY = Math.max(maxBottomY, pos.y + pos.h);
+      });
+
+      const legendY = maxBottomY + 60;
+      const legendW = 4 * colSpacing + nodeW; // 1940px
+
       let legendLines: string[] = [];
       if (input.legendSteps && input.legendSteps.length > 0) {
         legendLines = input.legendSteps;
@@ -297,11 +373,11 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         id: legendId,
         type: "geo",
         x: startX,
-        y: 490,
+        y: legendY,
         props: {
           geo: "rectangle",
-          w: 1580,
-          h: 95,
+          w: legendW,
+          h: 110,
           color: "yellow",
           fill: "semi",
           richText: richText(formattedSteps),
@@ -327,13 +403,14 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       let height = input.height;
       if (input.label) {
         const textLen = input.label.length;
+        const explicitLines = input.label.split("\n").length;
         // Eraser-style auto-sizing: prevent text from wrapping awkwardly or overflowing
-        const minW = Math.max(width, Math.min(340, Math.max(220, textLen * 8.5 + 44)));
+        const minW = Math.max(width, Math.min(360, Math.max(250, textLen * 8.5 + 44)));
         width = Math.round(minW);
         const usableWidth = width - 36;
         const charsPerLine = Math.max(12, Math.floor(usableWidth / 8.5));
-        const estimatedLines = Math.max(1, Math.ceil(textLen / charsPerLine));
-        const minH = Math.max(height, 50 + estimatedLines * 22);
+        const estimatedLines = Math.max(explicitLines, Math.ceil(textLen / charsPerLine));
+        const minH = Math.max(height, 56 + estimatedLines * 24);
         height = Math.round(minH);
       }
       editor.createShape({
@@ -421,14 +498,15 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       let height = input.height;
       if (input.label) {
         const textLen = input.label.length;
-        const baseW = width ?? ("props" in shape && "w" in shape.props ? (shape.props.w as number) : 220);
-        const baseH = height ?? ("props" in shape && "h" in shape.props ? (shape.props.h as number) : 75);
-        const minW = Math.max(baseW, Math.min(340, Math.max(220, textLen * 8.5 + 44)));
+        const explicitLines = input.label.split("\n").length;
+        const baseW = width ?? ("props" in shape && "w" in shape.props ? (shape.props.w as number) : 250);
+        const baseH = height ?? ("props" in shape && "h" in shape.props ? (shape.props.h as number) : 85);
+        const minW = Math.max(baseW, Math.min(360, Math.max(250, textLen * 8.5 + 44)));
         width = Math.round(minW);
         const usableWidth = width - 36;
         const charsPerLine = Math.max(12, Math.floor(usableWidth / 8.5));
-        const estimatedLines = Math.max(1, Math.ceil(textLen / charsPerLine));
-        const minH = Math.max(baseH, 50 + estimatedLines * 22);
+        const estimatedLines = Math.max(explicitLines, Math.ceil(textLen / charsPerLine));
+        const minH = Math.max(baseH, 56 + estimatedLines * 24);
         height = Math.round(minH);
       }
       // Shape type is only known at runtime, so the patch uses tldraw's loose partial type.
