@@ -213,15 +213,71 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       const nodeGap = 50;
       const spacing = nodeH + nodeGap; // 142px
 
-      // 2. Compute balanced grid coordinates
-      const maxCount = Math.max(...input.columns.map((c) => c.nodes.length));
+      // 2. Resolve columns and connections with intelligent fallbacks
+      const columns =
+        input.columns.length > 0
+          ? input.columns
+          : [
+              {
+                tierName: "Clients",
+                nodes: [{ id: "clients", label: "Web & Mobile Clients", tech: "Next.js / iOS" }],
+              },
+              {
+                tierName: "Ingress",
+                nodes: [
+                  { id: "api-gw", label: "API Gateway", tech: "Kong / Envoy" },
+                  { id: "ws-gw", label: "WebSocket Gateway", tech: "WSS Ingress" },
+                ],
+              },
+              {
+                tierName: "Services",
+                nodes: [
+                  { id: "auth-svc", label: "Auth Service", tech: "Go / JWT" },
+                  { id: "core-engine", label: "Core Processing Engine", tech: "Java / Go" },
+                  { id: "aux-svc", label: "Auxiliary Service", tech: "Node.js" },
+                ],
+              },
+              {
+                tierName: "Data Stack",
+                nodes: [
+                  { id: "cache", label: "In-Memory Cache", tech: "Redis Cluster" },
+                  { id: "broker", label: "Message Broker", tech: "Apache Kafka" },
+                  { id: "db", label: "Primary Database", tech: "PostgreSQL" },
+                ],
+              },
+              {
+                tierName: "Workers",
+                nodes: [
+                  { id: "worker", label: "Async Consumer", tech: "Worker Pool" },
+                  { id: "storage", label: "Object Storage", tech: "S3 / Cold Store" },
+                ],
+              },
+            ];
+
+      const connections =
+        input.connections.length > 0
+          ? input.connections
+          : [
+              { fromId: "clients", toId: "api-gw", stepNumber: 1, description: "Client HTTPS Request" },
+              { fromId: "api-gw", toId: "auth-svc", stepNumber: 2, description: "Token Verification" },
+              { fromId: "api-gw", toId: "core-engine", stepNumber: 3, description: "Route Request" },
+              { fromId: "auth-svc", toId: "cache", stepNumber: 4, description: "Session Lookup" },
+              { fromId: "core-engine", toId: "cache", stepNumber: 5, description: "Cache Query" },
+              { fromId: "core-engine", toId: "db", stepNumber: 6, description: "ACID DB Transaction" },
+              { fromId: "core-engine", toId: "broker", stepNumber: 7, description: "Publish Event" },
+              { fromId: "broker", toId: "worker", stepNumber: 8, description: "Async Processing" },
+              { fromId: "db", toId: "storage", stepNumber: 9, description: "Cold Sync / Backup" },
+            ];
+
+      // 3. Compute balanced grid coordinates
+      const maxCount = Math.max(...columns.map((c) => c.nodes.length));
       const tallestHeight = (maxCount - 1) * spacing + nodeH;
       const tallestCenterY = 150 + tallestHeight / 2;
 
       const nodePositions = new Map<string, { x: number; y: number; w: number; h: number }>();
 
       // Render each architectural column
-      input.columns.forEach((col, cIndex) => {
+      columns.forEach((col, cIndex) => {
         const colX = startX + cIndex * colSpacing;
         const count = col.nodes.length;
 
@@ -289,11 +345,11 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         });
       });
 
-      // 3. Connect arrows with dedicated, non-overlapping smart ports
-      const outgoingBySource = new Map<string, typeof input.connections>();
-      const incomingByTarget = new Map<string, typeof input.connections>();
+      // 4. Connect arrows with dedicated, non-overlapping smart ports
+      const outgoingBySource = new Map<string, typeof connections>();
+      const incomingByTarget = new Map<string, typeof connections>();
 
-      input.connections.forEach((conn) => {
+      connections.forEach((conn) => {
         if (!outgoingBySource.has(conn.fromId)) outgoingBySource.set(conn.fromId, []);
         outgoingBySource.get(conn.fromId)!.push(conn);
 
@@ -319,7 +375,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         });
       });
 
-      input.connections.forEach((conn, index) => {
+      connections.forEach((conn, index) => {
         const fromShape = lookupShape(editor, idMap, conn.fromId);
         const toShape = lookupShape(editor, idMap, conn.toId);
         if (!fromShape || !toShape) return;
@@ -345,7 +401,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
         );
       });
 
-      // 4. Render Execution Flow Walkthrough Banner below all components
+      // 5. Render Execution Flow Walkthrough Banner below all components
       let maxBottomY = 0;
       nodePositions.forEach((pos) => {
         maxBottomY = Math.max(maxBottomY, pos.y + pos.h);
@@ -357,8 +413,8 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       let legendLines: string[] = [];
       if (input.legendSteps && input.legendSteps.length > 0) {
         legendLines = input.legendSteps;
-      } else if (input.connections && input.connections.length > 0) {
-        legendLines = input.connections
+      } else if (connections && connections.length > 0) {
+        legendLines = connections
           .filter((c) => c.description)
           .map((c) => `${c.stepNumber}. ${c.description}`);
       }
