@@ -207,9 +207,17 @@
   border-radius: 9999px !important;
   padding: 1px 7px !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  white-space: nowrap !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 24px !important;
+  height: 22px !important;
+  box-sizing: border-box !important;
 }
 .tl-theme__dark .tl-shape[data-shape-type="arrow"] .tl-text-label {
   color: #38bdf8 !important;
   font-weight: 700 !important;
   font-size: 13px !important;
+  white-space: nowrap !important;
 }

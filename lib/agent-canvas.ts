@@ -91,13 +91,18 @@ function computeSmartPorts(
   if (Math.abs(dx) >= Math.abs(dy)) {
     // Horizontal flow (dominant in architecture diagrams)
     if (dx >= 0) {
-      fromAnchor = fromAnchorOverride ?? { x: 1.0, y: 0.5 };
-      toAnchor = toAnchorOverride ?? { x: 0.0, y: 0.5 };
+      // Fan out exit and entry ports based on vertical offset (dy) so parallel lines don't pinch
+      const exitY = dy < -35 ? 0.28 : dy > 35 ? 0.72 : 0.5;
+      const entryY = dy < -35 ? 0.72 : dy > 35 ? 0.28 : 0.5;
+      fromAnchor = fromAnchorOverride ?? { x: 1.0, y: exitY };
+      toAnchor = toAnchorOverride ?? { x: 0.0, y: entryY };
       start = { x: fromBounds.maxX, y: fromBounds.minY + fromBounds.h * fromAnchor.y };
       end = { x: toBounds.minX, y: toBounds.minY + toBounds.h * toAnchor.y };
     } else {
-      fromAnchor = fromAnchorOverride ?? { x: 0.0, y: 0.5 };
-      toAnchor = toAnchorOverride ?? { x: 1.0, y: 0.5 };
+      const exitY = dy < -35 ? 0.28 : dy > 35 ? 0.72 : 0.5;
+      const entryY = dy < -35 ? 0.72 : dy > 35 ? 0.28 : 0.5;
+      fromAnchor = fromAnchorOverride ?? { x: 0.0, y: exitY };
+      toAnchor = toAnchorOverride ?? { x: 1.0, y: entryY };
       start = { x: fromBounds.minX, y: fromBounds.minY + fromBounds.h * fromAnchor.y };
       end = { x: toBounds.maxX, y: toBounds.minY + toBounds.h * toAnchor.y };
     }
@@ -185,12 +190,12 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       if (input.label) {
         const textLen = input.label.length;
         // Eraser-style auto-sizing: prevent text from wrapping awkwardly or overflowing
-        const minW = Math.max(width, Math.min(320, Math.max(200, textLen * 7.5 + 40)));
+        const minW = Math.max(width, Math.min(340, Math.max(220, textLen * 8.5 + 44)));
         width = Math.round(minW);
         const usableWidth = width - 36;
-        const charsPerLine = Math.max(12, Math.floor(usableWidth / 8));
+        const charsPerLine = Math.max(12, Math.floor(usableWidth / 8.5));
         const estimatedLines = Math.max(1, Math.ceil(textLen / charsPerLine));
-        const minH = Math.max(height, 50 + estimatedLines * 20);
+        const minH = Math.max(height, 50 + estimatedLines * 22);
         height = Math.round(minH);
       }
       editor.createShape({
@@ -278,14 +283,14 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
       let height = input.height;
       if (input.label) {
         const textLen = input.label.length;
-        const baseW = width ?? ("props" in shape && "w" in shape.props ? (shape.props.w as number) : 200);
+        const baseW = width ?? ("props" in shape && "w" in shape.props ? (shape.props.w as number) : 220);
         const baseH = height ?? ("props" in shape && "h" in shape.props ? (shape.props.h as number) : 75);
-        const minW = Math.max(baseW, Math.min(320, Math.max(200, textLen * 7.5 + 40)));
+        const minW = Math.max(baseW, Math.min(340, Math.max(220, textLen * 8.5 + 44)));
         width = Math.round(minW);
         const usableWidth = width - 36;
-        const charsPerLine = Math.max(12, Math.floor(usableWidth / 8));
+        const charsPerLine = Math.max(12, Math.floor(usableWidth / 8.5));
         const estimatedLines = Math.max(1, Math.ceil(textLen / charsPerLine));
-        const minH = Math.max(baseH, 50 + estimatedLines * 20);
+        const minH = Math.max(baseH, 50 + estimatedLines * 22);
         height = Math.round(minH);
       }
       // Shape type is only known at runtime, so the patch uses tldraw's loose partial type.

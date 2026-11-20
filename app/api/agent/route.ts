@@ -68,38 +68,44 @@ When asked to design, architect, or build ANY system (e.g. URL Shortener, Chat /
   * Message Broker / Event Stream (Apache Kafka / RabbitMQ) - color: "orange", fill: "semi", w: 260, h: 80, at { x: 1300, y: 250 }
   * Primary Database (PostgreSQL / DynamoDB / Aurora) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 1300, y: 380 }
 
-- COLUMN 5: WORKERS & STORAGE (X: 1740, Width: 260):
-  * Async Worker / Stream Consumer (APNs, Push, Click Processor) - color: "orange", fill: "semi", w: 260, h: 80, at { x: 1740, y: 250 }
-  * Analytics Warehouse & Object Store (ClickHouse / S3 / BigQuery) - color: "violet", fill: "semi", w: 260, h: 80, at { x: 1740, y: 380 }
+- COLUMN 5: WORKERS & STORAGE (X: 1740, Width: 280):
+  * Async Worker / Stream Consumer - color: "orange", fill: "semi", w: 280, h: 85, at { x: 1740, y: 250 }
+  * Analytics Warehouse & Object Store - color: "violet", fill: "semi", w: 280, h: 85, at { x: 1740, y: 380 }
 
 --------------------------------------------------------------------------------
-2. BYTEBYTEGO NUMBERED CONNECTIONS (SINGLE DIGITS ONLY: "1", "2", "3", "4", "5"...):
+2. BYTEBYTEGO NUMBERED CONNECTIONS (SINGLE DIGITS OR COMPACT NUMBERS ONLY):
 --------------------------------------------------------------------------------
 CRITICAL: Arrow labels MUST BE SHORT SEQUENCE NUMBERS ONLY ("1", "2", "3", "4"...).
-NEVER put long words on arrows!
-Connect ONLY the direct request lifecycle path (EXACTLY 8 to 10 ARROWS TOTAL):
+NEVER put multi-word sentences on arrows!
+CRITICAL: EVERY node drawn MUST have active connections. ZERO orphaned or disconnected boxes!
+Connect the clean request and processing lifecycle:
 - Arrow 1: Clients -> Ingress 1 (label: "1")
 - Arrow 2: Ingress 1 -> Service 2 Core Processing (label: "2")
-- Arrow 3: Ingress 1 -> Service 1 Auth / Verification (label: "3")
-- Arrow 4: Service 2 Core Processing -> In-Memory Cache (label: "4")
-- Arrow 5: Service 2 Core Processing -> Primary Database (label: "5")
-- Arrow 6: Service 2 Core Processing -> Message Broker Kafka (label: "6")
-- Arrow 7: Message Broker Kafka -> Async Worker (label: "7")
-- Arrow 8: Primary Database -> Analytics Warehouse & Object Store (label: "8")
+- Arrow 3: Ingress 1 -> Service 1 Auth / User Mgmt (label: "3")
+- Arrow 4: Service 1 Auth / User Mgmt -> In-Memory Cache (label: "4")
+- Arrow 5: Service 2 Core Processing -> In-Memory Cache (label: "5")
+- Arrow 6: Service 2 Core Processing -> Primary Database (label: "6")
+- Arrow 7: Service 2 Core Processing -> Message Broker Kafka (label: "7")
+- Arrow 8: Message Broker Kafka -> Async Worker (label: "8")
+- Arrow 9: Primary Database -> Analytics Warehouse & Object Store (label: "9")
+(If Service 3 is drawn):
+- Arrow 10: Ingress 1 (or Ingress 2) -> Service 3 (label: "10")
+- Arrow 11: Service 3 -> Primary Database (label: "11")
 (If WebSocket Ingress 2 is present):
-- Arrow 9: Clients -> Ingress 2 Real-time (label: "9")
-- Arrow 10: Ingress 2 Real-time -> Service 2 Core Processing (label: "10")
+- Arrow 12: Clients -> Ingress 2 Real-time (label: "12")
+- Arrow 13: Ingress 2 Real-time -> Service 2 Core Processing (label: "13")
 
 STRICT NEGATIVE CONSTRAINT:
-- NEVER connect all services to all databases! Service 1 does NOT connect to Kafka. Service 3 does NOT connect to Redis.
+- NEVER connect all services to all databases!
+- ZERO orphaned boxes (every box has at least 1 incoming and 1 outgoing line).
 - ZERO criss-crossing lines!
 
 --------------------------------------------------------------------------------
-3. STICKY NOTE FLOW LEGEND (BELOW ARCHITECTURE AT Y: 490):
+3. STICKY NOTE FLOW LEGEND (BELOW ARCHITECTURE AT Y: 460):
 --------------------------------------------------------------------------------
-Immediately below the architecture, create a sticky note (createNote) at { x: 80, y: 490 } with color: "yellow" detailing the numbered execution flow:
+Immediately below Column 1 & 2 at Y: 460, create a sticky note (createNote) at { x: 80, y: 460 } with color: "yellow" detailing the numbered execution flow:
 Example format:
-"📌 EXECUTION FLOW WALKTHROUGH:\n1. Client sends HTTPS request\n2. API Gateway validates rate limits & routes\n3. Token & identity verification\n4. Fast Path: In-Memory Cache lookup (<5ms)\n5. Cache Miss: Query ACID Primary Database\n6. Publish event to Apache Kafka Broker\n7. Async Worker processes event stream\n8. Cold storage & OLAP replication"
+"📌 EXECUTION FLOW WALKTHROUGH:\n1. Client HTTPS Request\n2. API Gateway Route & Rate Limit\n3. Token Verification\n4. Session Cache Lookup\n5. Fast Path Data Cache\n6. ACID DB Transaction\n7. Publish Event to Kafka\n8. Async Worker Processing\n9. Cold Storage & Archival Sync"
 
 --------------------------------------------------------------------------------
 4. OPTIONAL DATABASE ERD TABLES (ONLY WHEN EXPLICITLY REQUESTED BY USER):
