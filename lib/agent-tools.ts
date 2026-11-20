@@ -41,6 +41,43 @@ const boxShape = (example: string) =>
   });
 
 export const canvasToolDefs = {
+  generateArchitectureDiagram: {
+    description:
+      "Eraser.io & DiagramGPT architectural engine: Generate a complete distributed system architecture diagram with 5-column layout, numbered step badges, and an execution walkthrough legend in a single call.",
+    inputSchema: z.object({
+      systemName: z.string().describe("Name of the system, e.g. 'URL Shortener Architecture'"),
+      columns: z
+        .array(
+          z.object({
+            tierName: z.string().describe("e.g. 'Clients', 'Ingress', 'Microservices', 'Data Stack', 'Workers'"),
+            nodes: z.array(
+              z.object({
+                id: z.string().describe("Unique id, e.g. 'clients', 'api-gw', 'core-engine', 'cache', 'db'"),
+                label: z.string().describe("Component name (2-3 words), e.g. 'API Gateway', 'Core Engine'"),
+                tech: z.string().optional().describe("Technology or protocol, e.g. 'Kong', 'Go', 'Redis', 'PostgreSQL'"),
+                color: shapeColor,
+                fill: shapeFill,
+              })
+            ),
+          })
+        )
+        .describe("The 5 columns of the architecture diagram from left to right"),
+      connections: z
+        .array(
+          z.object({
+            fromId: z.string().describe("id of source shape"),
+            toId: z.string().describe("id of target shape"),
+            stepNumber: z.number().describe("Sequential workflow step number: 1, 2, 3, 4, 5..."),
+            description: z.string().optional().describe("Description for the flow legend, e.g. 'Client HTTPS request'"),
+          })
+        )
+        .describe("Sequential flow connections with unique step numbers"),
+      legendSteps: z
+        .array(z.string())
+        .optional()
+        .describe("Ordered step-by-step descriptions for the bottom flow legend banner"),
+    }),
+  },
   createRectangle: { description: "Create a rectangle on the canvas with optional color and fill.", inputSchema: boxShape("rect-1") },
   createEllipse: { description: "Create an ellipse on the canvas with optional color and fill.", inputSchema: boxShape("ellipse-1") },
   createNote: {

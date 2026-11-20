@@ -182,6 +182,144 @@ function fontSizeToStyle(px: number) {
 export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: string, rawInput: unknown): ToolResult {
   const defs = canvasToolDefs;
   switch (toolName) {
+    case "generateArchitectureDiagram": {
+      const input = defs.generateArchitectureDiagram.inputSchema.parse(rawInput);
+
+      // 1. Clear existing shapes for a fresh canvas
+      const shapeIds = Array.from(editor.getCurrentPageShapeIds());
+      if (shapeIds.length > 0) {
+        editor.deleteShapes(shapeIds);
+      }
+      idMap.clear();
+
+      const startX = 80;
+      const colSpacing = 340; // 80, 420, 760, 1100, 1440
+      const nodeW = 220;
+      const nodeH = 75;
+      const centerY = 250;
+
+      // 2. Render each architectural column
+      input.columns.forEach((col, cIndex) => {
+        const colX = startX + cIndex * colSpacing;
+        const count = col.nodes.length;
+
+        // Tier Header Text (Eraser.io style)
+        const headerId = resolveNewId(idMap, `header-${cIndex}`);
+        editor.createShape({
+          id: headerId,
+          type: "text",
+          x: colX,
+          y: 75,
+          props: {
+            richText: richText(col.tierName.toUpperCase()),
+            color: "grey",
+            size: "s",
+          },
+        });
+
+        // Calculate balanced vertical spacing
+        const spacing = count <= 2 ? 140 : count === 3 ? 120 : 100;
+        const totalH = (count - 1) * spacing;
+        const startY = centerY - totalH / 2;
+
+        col.nodes.forEach((node, nIndex) => {
+          const nodeY = startY + nIndex * spacing;
+          const nodeId = resolveNewId(idMap, node.id);
+
+          // Determine semantic colors per tier
+          let defaultColor = node.color;
+          let defaultFill = node.fill ?? "semi";
+          if (!defaultColor) {
+            if (cIndex === 0) defaultColor = "blue";
+            else if (cIndex === 1) defaultColor = "green";
+            else if (cIndex === 2) {
+              defaultColor = "green";
+              if (nIndex === 1 || node.id.includes("core")) defaultFill = "solid";
+            } else if (cIndex === 3) {
+              const lower = (node.label + " " + node.id).toLowerCase();
+              if (lower.includes("cache") || lower.includes("redis")) defaultColor = "yellow";
+              else if (lower.includes("broker") || lower.includes("kafka") || lower.includes("stream") || lower.includes("queue")) defaultColor = "orange";
+              else defaultColor = "violet";
+            } else {
+              const lower = (node.label + " " + node.id).toLowerCase();
+              if (lower.includes("worker") || lower.includes("consumer")) defaultColor = "orange";
+              else defaultColor = "violet";
+            }
+          }
+
+          const labelText = node.tech ? `${node.label}\n(${node.tech})` : node.label;
+
+          editor.createShape({
+            id: nodeId,
+            type: "geo",
+            x: colX,
+            y: Math.round(nodeY),
+            props: {
+              geo: "rectangle",
+              w: nodeW,
+              h: nodeH,
+              color: defaultColor,
+              fill: defaultFill,
+              richText: richText(labelText),
+            },
+          });
+        });
+      });
+
+      // 3. Connect arrows with sequential numbered step badges
+      input.connections.forEach((conn, index) => {
+        const fromShape = lookupShape(editor, idMap, conn.fromId);
+        const toShape = lookupShape(editor, idMap, conn.toId);
+        if (!fromShape || !toShape) return;
+
+        const arrowId = resolveNewId(idMap, `arrow-${conn.stepNumber ?? index + 1}`);
+        const badgeLabel = String(conn.stepNumber ?? index + 1);
+        createArrowBetween(editor, arrowId, { id: fromShape.id }, { id: toShape.id }, badgeLabel, "blue");
+      });
+
+      // 4. Render Execution Flow Walkthrough Banner at bottom
+      let legendLines: string[] = [];
+      if (input.legendSteps && input.legendSteps.length > 0) {
+        legendLines = input.legendSteps;
+      } else if (input.connections && input.connections.length > 0) {
+        legendLines = input.connections
+          .filter((c) => c.description)
+          .map((c) => `${c.stepNumber}. ${c.description}`);
+      }
+
+      const formattedSteps =
+        legendLines.length > 0
+          ? `📌 SYSTEM EXECUTION FLOW:\n` + legendLines.join("   •   ")
+          : `📌 SYSTEM EXECUTION FLOW:\n1. Client Request   2. Gateway Route   3. Auth Verify   4. Cache Lookup   5. DB Write   6. Event Stream   7. Async Worker`;
+
+      const legendId = resolveNewId(idMap, "flow-legend");
+      editor.createShape({
+        id: legendId,
+        type: "geo",
+        x: startX,
+        y: 490,
+        props: {
+          geo: "rectangle",
+          w: 1580,
+          h: 95,
+          color: "yellow",
+          fill: "semi",
+          richText: richText(formattedSteps),
+        },
+      });
+
+      // 5. Smooth auto-zoom to fit the completed diagram
+      setTimeout(() => {
+        try {
+          editor.zoomToFit({ animation: { duration: 400 } });
+        } catch {
+          // ignore if unmounted
+        }
+      }, 120);
+
+      return ok();
+    }
+
     case "createRectangle":
     case "createEllipse": {
       const input = defs[toolName].inputSchema.parse(rawInput);
