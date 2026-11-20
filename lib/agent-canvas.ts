@@ -136,7 +136,7 @@ function createArrowBetween(
   const toBounds = editor.getShapePageBounds(to.id);
   if (!fromBounds || !toBounds) return fail("Could not resolve shape bounds");
 
-  const cleanLabel = label && label.length > 24 ? `${label.slice(0, 22)}…` : label;
+  const cleanLabel = label && label.length > 4 ? label.slice(0, 4).trim() : label;
   const { start, end, fromAnchor, toAnchor } = computeSmartPorts(fromBounds, toBounds, from.anchor, to.anchor);
 
   editor.createShape({
