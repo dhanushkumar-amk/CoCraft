@@ -61,13 +61,22 @@ It automatically renders an Eraser.io/DiagramGPT publication-grade architecture 
 - Auto-zooms to fit the completed diagram
 
 Structure your generateArchitectureDiagram call with:
-1. systemName: e.g. "URL Shortener Distributed Architecture"
-2. columns: 5 tiers from left to right:
-   - Tier 1 "Clients": nodes: [{ id: "clients", label: "Web & Mobile Clients", tech: "Next.js / iOS" }]
-   - Tier 2 "Ingress": nodes: [{ id: "api-gw", label: "API Gateway", tech: "Kong / Envoy" }, { id: "ws-gw", label: "WebSocket Gateway", tech: "WSS Ingress" }]
-   - Tier 3 "Services": nodes: [{ id: "auth-svc", label: "Auth Service", tech: "Go / JWT" }, { id: "core-engine", label: "[Core Engine]", tech: "Java / Go" }, { id: "aux-svc", label: "[Auxiliary Service]", tech: "Python / Node" }]
-   - Tier 4 "Data Stack": nodes: [{ id: "cache", label: "In-Memory Cache", tech: "Redis Cluster" }, { id: "broker", label: "Message Broker", tech: "Apache Kafka" }, { id: "db", label: "Primary Database", tech: "PostgreSQL" }]
-   - Tier 5 "Workers": nodes: [{ id: "worker", label: "Async Consumer", tech: "Worker Pool" }, { id: "storage", label: "Object Storage", tech: "S3 / Cold Store" }]
+1. systemName: e.g. "Google Docs Real-Time Collaboration Architecture"
+2. columns: 5 tiers strictly ordered from left to right:
+   - Tier 1 "Clients": nodes: [{ id: "clients", label: "Web & Mobile Clients", tech: "React / iOS / Android" }]
+   - Tier 2 "Ingress": nodes: [{ id: "api-gw", label: "API Gateway", tech: "Kong / Envoy" }, { id: "ws-gw", label: "WebSocket Gateway", tech: "WSS / gRPC" }]
+   - Tier 3 "Services": Core services that receive incoming requests from Ingress:
+     [{ id: "auth-svc", label: "Auth & Identity Service", tech: "Go / OAuth2" }, { id: "core-engine", label: "[Core Processing Engine]", tech: "Java / Go" }, { id: "collab-svc", label: "[Collaboration / Aux Service]", tech: "Rust / Node" }]
+   - Tier 4 "Data Stack": Databases, caches, and event streaming brokers:
+     [{ id: "cache", label: "In-Memory State Cache", tech: "Redis Cluster" }, { id: "db", label: "Primary Document DB", tech: "PostgreSQL / Spanner" }, { id: "broker", label: "Event Stream Broker", tech: "Apache Kafka" }]
+   - Tier 5 "Workers": Background consumers, search indexers, AI models, and cold storage:
+     [{ id: "worker", label: "Async Consumer / Worker", tech: "Worker Pool" }, { id: "search-ai", label: "Search & AI Indexer", tech: "Vertex AI / Vector" }, { id: "storage", label: "Object Storage & Op-Log", tech: "S3 / Cold Store" }]
+
+CRITICAL FLOW RULE — STRICTLY FORWARD (LEFT TO RIGHT):
+- Every arrow MUST connect forward: Col 1 → Col 2 → Col 3 → Col 4 → Col 5.
+- Background consumers and AI services (like Vertex AI, Search Indexers, Op-Log sync) MUST be in Tier 5 (Workers) so they receive events from Tier 4 (Kafka / DB).
+- NEVER draw an arrow that points backwards to a previous column!
+
 3. connections: Sequential request flow with UNIQUE stepNumber (1, 2, 3, 4, 5...):
    - 1: clients → api-gw ("Client HTTPS Request")
    - 2: api-gw → auth-svc ("Token Verification")
@@ -76,8 +85,9 @@ Structure your generateArchitectureDiagram call with:
    - 5: core-engine → cache ("Cache Query / Hit")
    - 6: core-engine → db ("ACID DB Transaction")
    - 7: core-engine → broker ("Publish Event")
-   - 8: broker → worker ("Async Processing")
-   - 9: db → storage ("Cold Sync / Backup")
+   - 8: broker → worker ("Async Event Processing")
+   - 9: broker → search-ai ("Index Event / AI Embed")
+   - 10: db → storage ("Cold Storage Backup")
    (If ws-gw or aux-svc present, add step 10, 11...)
 4. legendSteps:
    ["1. Client HTTPS Request", "2. API Gateway Route & Rate Limit", "3. Auth Token Verify", "4. Redis Cache Read/Write (<5ms)", "5. ACID DB Transaction", "6. Publish Kafka Event", "7. Async Worker Processing", "8. Object Storage Cold Sync"]

@@ -208,10 +208,19 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
 
       const startX = 80;
       const colSpacing = 420; // 80, 500, 920, 1340, 1760
-      const nodeW = 260;
-      const nodeH = 92;
-      const nodeGap = 50;
-      const spacing = nodeH + nodeGap; // 142px
+      const nodeW = 270;
+      const verticalGap = 45; // Exactly 45px between ANY adjacent boxes in the same column
+
+      // Helper: calculate exact required node height based on wrapped text lines
+      function measureNodeHeight(label: string, tech?: string): number {
+        const full = tech ? `${label}\n(${tech})` : label;
+        const lines = full.split("\n");
+        let totalVisualLines = 0;
+        for (const line of lines) {
+          totalVisualLines += Math.max(1, Math.ceil(line.length / 26));
+        }
+        return Math.max(88, 46 + totalVisualLines * 22);
+      }
 
       // 2. Resolve columns and connections with intelligent fallbacks
       const columns =
@@ -269,17 +278,22 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
               { fromId: "db", toId: "storage", stepNumber: 9, description: "Cold Sync / Backup" },
             ];
 
-      // 3. Compute balanced grid coordinates
-      const maxCount = Math.max(...columns.map((c) => c.nodes.length));
-      const tallestHeight = (maxCount - 1) * spacing + nodeH;
-      const tallestCenterY = 150 + tallestHeight / 2;
+      // 3. Compute dynamic height for every node and total height for every column
+      const colMetrics = columns.map((col) => {
+        const heights = col.nodes.map((n) => measureNodeHeight(n.label, n.tech));
+        const totalHeight = heights.reduce((sum, h) => sum + h, 0) + (col.nodes.length - 1) * verticalGap;
+        return { heights, totalHeight };
+      });
+
+      const maxDiagramHeight = Math.max(...colMetrics.map((m) => m.totalHeight));
+      const diagramCenterY = 150 + maxDiagramHeight / 2;
 
       const nodePositions = new Map<string, { x: number; y: number; w: number; h: number }>();
 
       // Render each architectural column
       columns.forEach((col, cIndex) => {
         const colX = startX + cIndex * colSpacing;
-        const count = col.nodes.length;
+        const metric = colMetrics[cIndex];
 
         // Tier Header Text (Eraser.io style) at Y: 95
         const headerId = resolveNewId(idMap, `header-${cIndex}`);
@@ -295,13 +309,18 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
           },
         });
 
-        const colHeight = (count - 1) * spacing + nodeH;
-        const colStartY = tallestCenterY - colHeight / 2;
+        // Vertically center this column relative to the diagram center
+        const colStartY = Math.round(diagramCenterY - metric.totalHeight / 2);
+        let currentY = colStartY;
 
         col.nodes.forEach((node, nIndex) => {
-          const nodeY = Math.round(colStartY + nIndex * spacing);
-          nodePositions.set(node.id, { x: colX, y: nodeY, w: nodeW, h: nodeH });
+          const measuredH = metric.heights[nIndex];
+          const nodeY = currentY;
+          nodePositions.set(node.id, { x: colX, y: nodeY, w: nodeW, h: measuredH });
           const nodeId = resolveNewId(idMap, node.id);
+
+          // Advance currentY for the next box: exactly measuredH + 45px gap
+          currentY += measuredH + verticalGap;
 
           // Determine semantic colors per tier
           let defaultColor = node.color;
@@ -317,11 +336,11 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
             } else if (cIndex === 3) {
               const lower = (node.label + " " + node.id).toLowerCase();
               if (lower.includes("cache") || lower.includes("redis")) defaultColor = "yellow";
-              else if (lower.includes("broker") || lower.includes("kafka") || lower.includes("stream") || lower.includes("queue")) defaultColor = "orange";
+              else if (lower.includes("broker") || lower.includes("kafka") || lower.includes("stream") || lower.includes("queue") || lower.includes("bus")) defaultColor = "orange";
               else defaultColor = "violet";
             } else {
               const lower = (node.label + " " + node.id).toLowerCase();
-              if (lower.includes("worker") || lower.includes("consumer") || lower.includes("processor")) defaultColor = "orange";
+              if (lower.includes("worker") || lower.includes("consumer") || lower.includes("processor") || lower.includes("sync")) defaultColor = "orange";
               else defaultColor = "violet";
             }
           }
@@ -336,7 +355,7 @@ export function executeCanvasTool(editor: Editor, idMap: ShapeIdMap, toolName: s
             props: {
               geo: "rectangle",
               w: nodeW,
-              h: nodeH,
+              h: measuredH,
               color: defaultColor,
               fill: defaultFill,
               richText: richText(labelText),
