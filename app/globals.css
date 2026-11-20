@@ -189,7 +189,7 @@
   }
 }
 
-/* Excalidraw Dark-Mode Canvas Aesthetics: Crisp White Outlines with Pastel Fills */
+/* Excalidraw & Eraser Dark-Mode Canvas Aesthetics: Crisp Outlines with Pastel Fills */
 .tl-theme__dark .tl-shape[data-shape-type="geo"] .tl-svg-container path[stroke]:not([stroke="none"]) {
   stroke: #f8fafc !important;
   stroke-width: 2px !important;
@@ -197,4 +197,11 @@
 .tl-theme__dark .tl-shape[data-shape-type="geo"] .tl-text-label,
 .tl-theme__dark .tl-shape[data-shape-type="geo"] .tl-text {
   color: #f8fafc !important;
+}
+.tl-theme__dark .tl-shape[data-shape-type="arrow"] .tl-svg-container path[stroke]:not([stroke="none"]) {
+  stroke: #cbd5e1 !important;
+}
+.tl-theme__dark .tl-shape[data-shape-type="arrow"] .tl-text-label {
+  color: #f1f5f9 !important;
+  font-weight: 500;
 }
