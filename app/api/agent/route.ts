@@ -44,9 +44,8 @@ When asked to design, architect, or build ANY system (e.g. URL Shortener, Chat /
 - NEVER guess random coordinates. Follow the deterministic 5-Column Matrix below.
 - NEVER draw a bipartite mesh (do NOT connect all services to all databases).
 - NUMBERED STEP BADGES ONLY on arrows ("1", "2", "3", "4", "5", "6", "7", "8"). No long sentences on arrows!
-- ALWAYS add a Sticky Note Flow Legend (createNote) below the architecture explaining each step number.
-- CRITICAL: DO NOT automatically create database ERD tables! Keep the canvas clean, focused strictly on the System Architecture + Flow Legend. ONLY create ERD tables if the user explicitly asks for them (e.g. "include database schema", "with ERD", "generate ERD diagram").
-- In your chat reply, politely offer the user the option: "💡 *Tip: If you'd like to see the relational database ERD schema for this system, just reply 'add ERD diagram'.*"
+- ALWAYS add a wide Execution Flow Legend Banner (createRectangle) below the architecture.
+- ABSOLUTE BAN ON ERD TABLES: DO NOT draw entity tables, database schemas, or column tables on the canvas. The canvas is exclusively for the High-Level Distributed System Architecture diagram. Detailed table schemas belong strictly in the HLD technical document (Doc surface).
 
 --------------------------------------------------------------------------------
 1. THE 5-COLUMN ARCHITECTURE MATRIX (Generously Spaced Progression):
@@ -73,11 +72,10 @@ When asked to design, architect, or build ANY system (e.g. URL Shortener, Chat /
   * Analytics Warehouse & Object Store - color: "violet", fill: "semi", w: 280, h: 85, at { x: 1740, y: 380 }
 
 --------------------------------------------------------------------------------
-2. BYTEBYTEGO NUMBERED CONNECTIONS (SINGLE DIGITS OR COMPACT NUMBERS ONLY):
+2. BYTEBYTEGO NUMBERED CONNECTIONS (COMPACT NUMBERS ONLY):
 --------------------------------------------------------------------------------
-CRITICAL: Arrow labels MUST BE SHORT SEQUENCE NUMBERS ONLY ("1", "2", "3", "4"...).
-NEVER put multi-word sentences on arrows!
-CRITICAL: EVERY node drawn MUST have active connections. ZERO orphaned or disconnected boxes!
+CRITICAL: Every single arrow MUST have a short number label ("1", "2", "3", "4"...).
+NEVER leave an arrow without a number label! NEVER put long text sentences on arrows!
 Connect the clean request and processing lifecycle:
 - Arrow 1: Clients -> Ingress 1 (label: "1")
 - Arrow 2: Ingress 1 -> Service 2 Core Processing (label: "2")
@@ -97,32 +95,31 @@ Connect the clean request and processing lifecycle:
 
 STRICT NEGATIVE CONSTRAINT:
 - NEVER connect all services to all databases!
-- ZERO orphaned boxes (every box has at least 1 incoming and 1 outgoing line).
+- ZERO orphaned boxes (every box drawn has at least 1 incoming and 1 outgoing arrow).
 - ZERO criss-crossing lines!
 
 --------------------------------------------------------------------------------
-3. STICKY NOTE FLOW LEGEND (BELOW ARCHITECTURE AT Y: 460):
+3. EXECUTION FLOW LEGEND BANNER (WIDE RECTANGLE AT Y: 460):
 --------------------------------------------------------------------------------
-Immediately below Column 1 & 2 at Y: 460, create a sticky note (createNote) at { x: 80, y: 460 } with color: "yellow" detailing the numbered execution flow:
-Example format:
-"📌 EXECUTION FLOW WALKTHROUGH:\n1. Client HTTPS Request\n2. API Gateway Route & Rate Limit\n3. Token Verification\n4. Session Cache Lookup\n5. Fast Path Data Cache\n6. ACID DB Transaction\n7. Publish Event to Kafka\n8. Async Worker Processing\n9. Cold Storage & Archival Sync"
+Immediately below Column 1 & 2 at Y: 460, create a wide horizontal callout banner box using createRectangle:
+- id: "flow-legend-banner"
+- position: { x: 80, y: 460 }
+- width: 1040, height: 110
+- color: "yellow", fill: "semi"
+- label: "📌 SYSTEM EXECUTION FLOW:\n1. Client HTTPS Request  2. API Gateway Route  3. Auth Token Verify  4. Cache Lookup (<5ms)\n5. ACID DB Transaction  6. Publish to Kafka Broker  7. Async Worker Processing  8. Storage Cold Sync"
+DO NOT use tall squeezed sticky notes. Always use this wide horizontal rectangle banner so text lays out cleanly.
 
 --------------------------------------------------------------------------------
-4. OPTIONAL DATABASE ERD TABLES (ONLY WHEN EXPLICITLY REQUESTED BY USER):
---------------------------------------------------------------------------------
-DO NOT create these unless the user explicitly requests an ERD schema or database tables!
-When explicitly asked, place 3 to 4 relational entity tables horizontally below at Y: 740 with 400px horizontal spacing:
-- Table 1 (X: 80, Y: 740)
-- Table 2 (X: 480, Y: 740)
-- Table 3 (X: 880, Y: 740)
-- Table 4 (X: 1280, Y: 740)
-Always connect foreign keys strictly left-to-right between adjacent tables using connectRelationship.
-
---------------------------------------------------------------------------------
-5. TECHNICAL SPECIFICATION IN THE DOC (replaceDoc):
+4. TECHNICAL SPECIFICATION IN THE DOC (replaceDoc):
 --------------------------------------------------------------------------------
 Whenever an architecture is designed, write a comprehensive, publication-grade HLD document containing:
 - # [System Name] High-Level Design (HLD) & Architecture Specification
+- ## 1. System Requirements & Goals (Functional and Non-Functional)
+- ## 2. Scale & Capacity Estimation (DAU, Read/Write QPS, Bandwidth, 5-Year Storage)
+- ## 3. Core Architectural Components & Technology Choices (Latency vs Durability rationale)
+- ## 4. Data Model & Database Architecture (Schema breakdown, partition keys, indexing)
+- ## 5. End-to-End Sequence & Data Flows (Request/response lifecycle, caching strategies, fallback)
+- ## 6. Reliability, Fault Tolerance & Failure Handling (Dead-letter queues, failover, disaster recovery)
 - ## 1. System Requirements & Goals (Functional and Non-Functional)
 - ## 2. Scale & Capacity Estimation (DAU, Read/Write QPS, Bandwidth, 5-Year Storage)
 - ## 3. Core Architectural Components & Technology Choices (Latency vs Durability rationale)
@@ -167,10 +164,23 @@ export async function POST(req: Request) {
 
   const { model, isGoogle } = selectModel();
 
+  const lastUserMsg = messages.findLast((m) => m.role === "user");
+  const userText = lastUserMsg?.parts?.map((p) => (p.type === "text" ? p.text : "")).join(" ") || "";
+  const wantsERD = /\b(erd|database schema|tables? schema|entity table|entity relationship)\b/i.test(userText);
+
+  // Unless explicitly requested by the user, exclude all entity-table tools completely
+  const activeTools = wantsERD
+    ? agentToolDefs
+    : (Object.fromEntries(
+        Object.entries(agentToolDefs).filter(([name]) =>
+          !["createEntityTable", "addColumn", "updateColumn", "removeColumn", "connectRelationship"].includes(name)
+        )
+      ) as typeof agentToolDefs);
+
   const result = streamText({
     model,
     system: `${SYSTEM_PROMPT}\n\nCurrent canvas state:\n${canvasContext || EMPTY_CANVAS}\n\nCurrent doc state:\n${docContext || EMPTY_DOC}`,
-    tools: agentToolDefs,
+    tools: activeTools,
     messages: await convertToModelMessages(messages),
     ...(isGoogle ? { providerOptions: { google: { thinkingConfig: { includeThoughts: true } } } } : {}),
     onFinish: async () => {
